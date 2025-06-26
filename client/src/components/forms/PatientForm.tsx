@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -27,7 +27,7 @@ const prakritiOptions = [
 ];
 
 const vikritiOptions = [
-  { value: "", label: "Select Vikriti" },
+  { value: "normal", label: "Normal (No Imbalance)" },
   { value: "vata", label: "Vata Imbalance" },
   { value: "pitta", label: "Pitta Imbalance" },
   { value: "kapha", label: "Kapha Imbalance" },
@@ -92,6 +92,9 @@ export default function PatientForm({ open, onOpenChange }: PatientFormProps) {
       <DialogContent className="max-w-4xl max-h-screen overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-semibold text-ayur-gray-900">Add New Patient</DialogTitle>
+          <DialogDescription>
+            Create a new patient record with complete Ayurvedic assessment and contact information.
+          </DialogDescription>
         </DialogHeader>
         
         <Form {...form}>
@@ -148,9 +151,9 @@ export default function PatientForm({ open, onOpenChange }: PatientFormProps) {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="male">Male</SelectItem>
-                            <SelectItem value="female">Female</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
+                            <SelectItem value="Male">Male</SelectItem>
+                            <SelectItem value="Female">Female</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
