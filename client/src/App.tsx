@@ -10,6 +10,7 @@ import Appointments from "@/pages/Appointments";
 import Prescriptions from "@/pages/Prescriptions";
 import Payments from "@/pages/Payments";
 import Reports from "@/pages/Reports";
+import Settings from "@/pages/Settings";
 import Login from "@/pages/Login";
 import { useAuth } from "@/hooks/useAuth";
 import Sidebar from "@/components/layout/Sidebar";
@@ -40,6 +41,7 @@ function AppContent() {
           <Route path="/prescriptions" component={Prescriptions} />
           <Route path="/payments" component={Payments} />
           <Route path="/reports" component={Reports} />
+          <Route path="/settings" component={Settings} />
           <Route component={NotFound} />
         </Switch>
       </main>
