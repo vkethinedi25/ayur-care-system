@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, UserCheck, Calendar, Stethoscope, Activity } from "lucide-react";
+import { Users, UserCheck, Calendar, Stethoscope, Activity, TrendingUp, Clock } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -46,9 +46,15 @@ export default function AdminDashboard() {
   const { user } = useAuth();
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
 
+  // Fetch comprehensive admin dashboard metrics
+  const { data: adminMetrics, isLoading: metricsLoading } = useQuery({
+    queryKey: ["/api/admin/dashboard/metrics"],
+    enabled: user?.role === 'admin',
+  });
+
   // Fetch all doctors and staff
   const { data: doctors = [], isLoading: doctorsLoading } = useQuery({
-    queryKey: ["/api/admin/doctors"],
+    queryKey: ["/api/users"],
     enabled: user?.role === 'admin',
   });
 
@@ -89,6 +95,108 @@ export default function AdminDashboard() {
       />
       
       <div className="flex-1 space-y-6 p-8 pt-6">
+        {/* Admin Dashboard Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {metricsLoading ? (
+            Array.from({ length: 7 }).map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-6">
+                  <div className="animate-pulse space-y-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total Patients</p>
+                      <p className="text-3xl font-bold">{adminMetrics?.totalPatients || 0}</p>
+                    </div>
+                    <Users className="h-8 w-8 text-blue-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total Doctors</p>
+                      <p className="text-3xl font-bold">{adminMetrics?.totalDoctors || 0}</p>
+                    </div>
+                    <UserCheck className="h-8 w-8 text-green-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total Staff</p>
+                      <p className="text-3xl font-bold">{adminMetrics?.totalStaff || 0}</p>
+                    </div>
+                    <Users className="h-8 w-8 text-purple-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Monthly Revenue</p>
+                      <p className="text-3xl font-bold">₹{adminMetrics?.monthlyRevenue?.toLocaleString('en-IN') || 0}</p>
+                    </div>
+                    <TrendingUp className="h-8 w-8 text-green-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Pending Payments</p>
+                      <p className="text-3xl font-bold">{adminMetrics?.pendingPayments || 0}</p>
+                    </div>
+                    <Clock className="h-8 w-8 text-orange-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Scheduled Appointments</p>
+                      <p className="text-3xl font-bold">{adminMetrics?.scheduledAppointments || 0}</p>
+                    </div>
+                    <Calendar className="h-8 w-8 text-blue-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Active Users (30 days)</p>
+                      <p className="text-3xl font-bold">{adminMetrics?.activeUsers || 0}</p>
+                    </div>
+                    <Activity className="h-8 w-8 text-green-600" />
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
+
         {/* All Doctors/Staff Overview */}
         <Card>
           <CardHeader>

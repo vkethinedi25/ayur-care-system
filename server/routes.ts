@@ -579,6 +579,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin dashboard routes (admin only)
+  app.get("/api/admin/dashboard/metrics", requireAuth, requireRole(["admin"]), async (req, res) => {
+    try {
+      const metrics = await storage.getAdminDashboardMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching admin dashboard metrics:", error);
+      res.status(500).json({ message: "Failed to fetch admin dashboard metrics" });
+    }
+  });
+
   app.get("/api/admin/doctor-stats/:doctorId", requireRole(["admin"]), async (req, res) => {
     try {
       const doctorId = parseInt(req.params.doctorId);
