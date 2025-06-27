@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 
 interface User {
   id: number;
@@ -15,6 +16,8 @@ interface User {
 }
 
 export function useAuth() {
+  const queryClient = useQueryClient();
+  
   const { data: user, isLoading, error } = useQuery({
     queryKey: ["/api/auth/user"],
     retry: false,
@@ -22,10 +25,25 @@ export function useAuth() {
     staleTime: 60000, // Cache for 1 minute
   });
 
+  const logout = useCallback(async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      // Clear authentication cache and redirect
+      queryClient.setQueryData(["/api/auth/user"], null);
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      window.location.reload();
+    }
+  }, [queryClient]);
+
   return {
     user,
     isLoading,
     isAuthenticated: !!user,
     error,
+    logout,
   };
 }

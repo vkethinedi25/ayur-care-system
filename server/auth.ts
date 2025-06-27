@@ -6,12 +6,12 @@ import type { Express, RequestHandler } from "express";
 import { storage } from "./storage";
 
 export function getSession() {
-  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  const sessionTtl = 30 * 60 * 1000; // 30 minutes
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
     createTableIfMissing: true,
-    ttl: sessionTtl,
+    ttl: sessionTtl / 1000, // Convert to seconds for pg-store
     tableName: "sessions",
   });
   
