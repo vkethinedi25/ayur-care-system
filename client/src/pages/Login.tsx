@@ -49,8 +49,12 @@ export default function Login() {
           title: "Welcome back!",
           description: "You have been successfully logged in.",
         });
-        // Refresh the authentication state by invalidating queries
+        // Refresh the authentication state and force redirect
         queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        // Small delay to ensure query is updated before navigation
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 100);
       } else {
         const error = await response.text();
         toast({

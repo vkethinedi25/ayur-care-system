@@ -124,10 +124,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/auth/user", requireAuth, async (req, res) => {
     try {
-      const user = await storage.getUser(req.session.userId!);
+      const userId = req.session.userId;
+      
+      if (!userId) {
+        console.log('No userId in session for auth check');
+        return res.status(401).json({ message: "No user session" });
+      }
+      
+      const user = await storage.getUser(userId);
+      
       if (!user) {
+        console.log(`User not found in database: ${userId}`);
+        // Clear invalid session
+        req.session.destroy((err: any) => {
+          if (err) console.error('Session destroy error:', err);
+        });
         return res.status(401).json({ message: "User not found" });
       }
+      
+      // Update session activity
+      req.session.touch();
       
       const { password: _, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);

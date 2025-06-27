@@ -18,12 +18,16 @@ export function getSession() {
   return session({
     secret: process.env.SESSION_SECRET || "your-secret-key-change-in-production",
     store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // Force session save for deployment reliability
+    saveUninitialized: true, // Ensure session initialization
+    rolling: true, // Extend session on activity
+    name: 'ayur.sid', // Custom session name for better tracking
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // Set to false for Replit deployment compatibility
+      sameSite: 'lax', // Important for cross-origin requests
       maxAge: sessionTtl,
+      path: '/',
     },
   });
 }
@@ -102,9 +106,26 @@ export function setupGoogleAuth(app: Express) {
 }
 
 export const requireAuth: RequestHandler = (req, res, next) => {
-  if (!req.session?.userId) {
+  // Debug session state for deployment troubleshooting
+  console.log('Session check:', {
+    sessionExists: !!req.session,
+    userId: req.session?.userId,
+    sessionID: req.sessionID,
+    cookies: req.headers.cookie ? 'present' : 'missing'
+  });
+  
+  // Check if session exists and has userId
+  if (!req.session) {
+    console.log('No session found - session middleware issue');
+    return res.status(401).json({ message: "No session" });
+  }
+  
+  if (!req.session.userId) {
+    console.log('No userId in session - user not logged in');
     return res.status(401).json({ message: "Unauthorized" });
   }
+  
+  // Session is valid, proceed
   next();
 };
 

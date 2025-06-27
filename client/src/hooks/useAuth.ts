@@ -21,23 +21,33 @@ export function useAuth() {
   const { data: user, isLoading, error } = useQuery({
     queryKey: ["/api/auth/user"],
     queryFn: async () => {
-      const res = await fetch("/api/auth/user", {
-        credentials: "include",
-      });
-      
-      if (res.status === 401) {
-        return null; // User is not authenticated
+      try {
+        const res = await fetch("/api/auth/user", {
+          credentials: "include",
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+        
+        if (res.status === 401) {
+          return null; // User is not authenticated
+        }
+        
+        if (!res.ok) {
+          throw new Error(`${res.status}: ${res.statusText}`);
+        }
+        
+        return await res.json();
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        return null;
       }
-      
-      if (!res.ok) {
-        throw new Error(`${res.status}: ${res.statusText}`);
-      }
-      
-      return await res.json();
     },
     retry: false,
-    refetchOnWindowFocus: false,
-    staleTime: 60000, // Cache for 1 minute
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 0, // Always fetch fresh auth state
   });
 
   const logout = useCallback(async () => {
