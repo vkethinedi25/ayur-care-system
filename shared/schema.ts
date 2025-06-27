@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, decimal, json, varchar, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, decimal, json, jsonb, varchar, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -130,6 +130,17 @@ export const patientCounters = pgTable("patient_counters", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const userLoginLogs = pgTable("user_login_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  loginTime: timestamp("login_time").defaultNow(),
+  ipAddress: varchar("ip_address", { length: 45 }), // Support IPv6
+  userAgent: text("user_agent"),
+  location: jsonb("location"), // Store geolocation data
+  sessionId: varchar("session_id", { length: 255 }),
+  loginStatus: varchar("login_status", { length: 20 }).notNull().default("success"), // success, failed, logout
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   appointments: many(appointments),
@@ -208,6 +219,13 @@ export const patientCountersRelations = relations(patientCounters, ({ one }) => 
   }),
 }));
 
+export const userLoginLogsRelations = relations(userLoginLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [userLoginLogs.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -256,3 +274,11 @@ export type BedManagement = typeof bedManagement.$inferSelect;
 export type InpatientRecord = typeof inpatientRecords.$inferSelect;
 export type InsertInpatientRecord = z.infer<typeof insertInpatientRecordSchema>;
 export type PatientCounter = typeof patientCounters.$inferSelect;
+
+export const insertUserLoginLogSchema = createInsertSchema(userLoginLogs).omit({
+  id: true,
+  loginTime: true,
+});
+
+export type UserLoginLog = typeof userLoginLogs.$inferSelect;
+export type InsertUserLoginLog = z.infer<typeof insertUserLoginLogSchema>;

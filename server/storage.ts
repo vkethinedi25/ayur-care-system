@@ -1,9 +1,9 @@
 import { 
-  users, patients, appointments, prescriptions, payments, bedManagement, inpatientRecords, patientCounters,
+  users, patients, appointments, prescriptions, payments, bedManagement, inpatientRecords, patientCounters, userLoginLogs,
   type User, type InsertUser, type Patient, type InsertPatient, 
   type Appointment, type InsertAppointment, type Prescription, type InsertPrescription,
   type Payment, type InsertPayment, type BedManagement, type InpatientRecord, type InsertInpatientRecord,
-  type PatientCounter
+  type PatientCounter, type UserLoginLog, type InsertUserLoginLog
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, lte, ilike, or, count, sum } from "drizzle-orm";
@@ -55,6 +55,11 @@ export interface IStorage {
   
   getTodayAppointments(doctorId?: number): Promise<(Appointment & { patient: Patient })[]>;
   getRecentPatients(limit: number, doctorId?: number): Promise<Patient[]>;
+  
+  // User login log methods (admin only)
+  createUserLoginLog(loginLog: InsertUserLoginLog): Promise<UserLoginLog>;
+  getUserLoginLogs(limit?: number, offset?: number): Promise<(UserLoginLog & { user: User })[]>;
+  getLoginLogsByUserId(userId: number, limit?: number): Promise<UserLoginLog[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -662,6 +667,64 @@ export class DatabaseStorage implements IStorage {
     }
     
     return await query;
+  }
+
+  // User login log methods (admin only)
+  async createUserLoginLog(loginLogData: InsertUserLoginLog): Promise<UserLoginLog> {
+    const [loginLog] = await db
+      .insert(userLoginLogs)
+      .values(loginLogData)
+      .returning();
+    return loginLog;
+  }
+
+  async getUserLoginLogs(limit = 50, offset = 0): Promise<(UserLoginLog & { user: User })[]> {
+    const loginLogs = await db
+      .select({
+        id: userLoginLogs.id,
+        userId: userLoginLogs.userId,
+        loginTime: userLoginLogs.loginTime,
+        ipAddress: userLoginLogs.ipAddress,
+        userAgent: userLoginLogs.userAgent,
+        location: userLoginLogs.location,
+        sessionId: userLoginLogs.sessionId,
+        loginStatus: userLoginLogs.loginStatus,
+        user: {
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          fullName: users.fullName,
+          role: users.role,
+        }
+      })
+      .from(userLoginLogs)
+      .leftJoin(users, eq(userLoginLogs.userId, users.id))
+      .orderBy(desc(userLoginLogs.loginTime))
+      .limit(limit)
+      .offset(offset);
+
+    return loginLogs.map(log => ({
+      id: log.id,
+      userId: log.userId,
+      loginTime: log.loginTime,
+      ipAddress: log.ipAddress,
+      userAgent: log.userAgent,
+      location: log.location,
+      sessionId: log.sessionId,
+      loginStatus: log.loginStatus,
+      user: log.user!
+    }));
+  }
+
+  async getLoginLogsByUserId(userId: number, limit = 20): Promise<UserLoginLog[]> {
+    const loginLogs = await db
+      .select()
+      .from(userLoginLogs)
+      .where(eq(userLoginLogs.userId, userId))
+      .orderBy(desc(userLoginLogs.loginTime))
+      .limit(limit);
+    
+    return loginLogs;
   }
 }
 

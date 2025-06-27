@@ -485,6 +485,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin-only user login logs
+  app.get("/api/admin/login-logs", requireAuth, requireRole(["admin"]), async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const loginLogs = await storage.getUserLoginLogs(limit, offset);
+      res.json(loginLogs);
+    } catch (error) {
+      console.error("Error fetching login logs:", error);
+      res.status(500).json({ message: "Failed to fetch login logs" });
+    }
+  });
+
+  app.get("/api/admin/login-logs/:userId", requireAuth, requireRole(["admin"]), async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const limit = parseInt(req.query.limit as string) || 20;
+      
+      const userLoginLogs = await storage.getLoginLogsByUserId(userId, limit);
+      res.json(userLoginLogs);
+    } catch (error) {
+      console.error("Error fetching user login logs:", error);
+      res.status(500).json({ message: "Failed to fetch user login logs" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

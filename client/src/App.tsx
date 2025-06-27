@@ -12,6 +12,7 @@ import Payments from "@/pages/Payments";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
 import Users from "@/pages/Users";
+import AdminLogs from "@/pages/AdminLogs";
 import Login from "@/pages/Login";
 import { useAuth } from "@/hooks/useAuth";
 import Sidebar from "@/components/layout/Sidebar";
@@ -44,6 +45,7 @@ function AppContent() {
           <Route path="/reports" component={Reports} />
           <Route path="/settings" component={Settings} />
           <Route path="/users" component={Users} />
+          <Route path="/admin/logs" component={AdminLogs} />
           <Route component={NotFound} />
         </Switch>
       </main>

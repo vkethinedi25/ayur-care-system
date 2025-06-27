@@ -115,6 +115,14 @@ The system uses a comprehensive PostgreSQL schema with the following main entiti
 - **File Storage**: Local uploads directory with configurable limits
 
 ## Changelog
+- June 27, 2025. Admin user login logging system implementation:
+  - Created comprehensive user login tracking with location data capture
+  - Added new database table (user_login_logs) for storing login attempts, IP addresses, user agents, and location details
+  - Implemented admin-only API endpoints for viewing all user login history and individual user login details
+  - Built AdminLogs page with filtering capabilities by status (success/failed/locked) and user-specific search
+  - Enhanced sidebar navigation with admin-only "Login Logs" section for security monitoring
+  - Added automatic login tracking for successful, failed, and locked account attempts
+  - Database schema includes jsonb location field for flexible geographic data storage
 - June 27, 2025. Complete doctor-based data isolation implementation:
   - Implemented comprehensive security enhancement across ALL pages and API endpoints
   - Added authentication requirements to all sensitive endpoints (dashboard, appointments, prescriptions, payments)
