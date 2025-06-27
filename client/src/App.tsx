@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -12,16 +11,24 @@ import Prescriptions from "@/pages/Prescriptions";
 import Payments from "@/pages/Payments";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
+import Users from "@/pages/Users";
 import Login from "@/pages/Login";
 import { useAuth } from "@/hooks/useAuth";
 import Sidebar from "@/components/layout/Sidebar";
 
 function AppContent() {
-  // Simple authentication state - no automatic checking
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-ayur-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ayur-primary"></div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
-    return <Login onLoginSuccess={() => setIsAuthenticated(true)} />;
+    return <Login />;
   }
 
   return (
@@ -36,6 +43,7 @@ function AppContent() {
           <Route path="/payments" component={Payments} />
           <Route path="/reports" component={Reports} />
           <Route path="/settings" component={Settings} />
+          <Route path="/users" component={Users} />
           <Route component={NotFound} />
         </Switch>
       </main>

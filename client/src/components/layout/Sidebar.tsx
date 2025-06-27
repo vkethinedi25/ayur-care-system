@@ -9,7 +9,8 @@ import {
   BarChart3, 
   Settings, 
   LogOut,
-  Flower
+  Flower,
+  Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,6 +23,10 @@ const navigationItems = [
   { path: "/payments", label: "Payments", icon: CreditCard },
   { path: "/reports", label: "Reports", icon: BarChart3 },
   { path: "/settings", label: "Settings", icon: Settings },
+];
+
+const adminNavigationItems = [
+  { path: "/users", label: "User Management", icon: Shield, adminOnly: true },
 ];
 
 export default function Sidebar() {
@@ -56,6 +61,26 @@ export default function Sidebar() {
             </Link>
           );
         })}
+        
+        {/* Admin-only navigation items */}
+        {user?.role === 'admin' && (
+          <>
+            <div className="border-t border-ayur-gray-200 my-4"></div>
+            {adminNavigationItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location === item.path;
+              
+              return (
+                <Link key={item.path} href={item.path} className={`flex items-center space-x-3 px-4 py-3 text-ayur-gray-700 hover:bg-ayur-primary-50 hover:text-ayur-primary-600 rounded-lg transition-colors duration-200 ${
+                  isActive ? 'bg-ayur-primary-50 text-ayur-primary-600' : ''
+                }`}>
+                  <Icon className="w-5 h-5" />
+                  <span className="font-medium">{item.label}</span>
+                </Link>
+              );
+            })}
+          </>
+        )}
       </nav>
 
       <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-ayur-gray-200 bg-white">

@@ -100,6 +100,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User management routes (admin only)
+  app.get("/api/users", requireRole(["admin"]), async (req, res) => {
+    try {
+      const users = await storage.getUsers();
+      const usersWithoutPasswords = users.map(({ password: _, ...user }) => user);
+      res.json(usersWithoutPasswords);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.post("/api/users", requireRole(["admin"]), async (req, res) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+      const user = await storage.createUser(userData);
+      
+      const { password: _, ...userWithoutPassword } = user;
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  app.patch("/api/users/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const updateData = insertUserSchema.partial().parse(req.body);
+      
+      const user = await storage.updateUser(userId, updateData);
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.delete("/api/users/:id", requireRole(["admin"]), async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      await storage.deleteUser(userId);
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  app.patch("/api/users/:id/toggle-status", requireRole(["admin"]), async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { isActive } = req.body;
+      
+      const user = await storage.toggleUserStatus(userId, isActive);
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error toggling user status:", error);
+      res.status(500).json({ message: "Failed to toggle user status" });
+    }
+  });
+
   // Dashboard routes
   app.get("/api/dashboard/metrics", async (req, res) => {
     try {

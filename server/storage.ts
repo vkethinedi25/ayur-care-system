@@ -12,7 +12,11 @@ export interface IStorage {
   // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, user: Partial<InsertUser>): Promise<User>;
+  deleteUser(id: number): Promise<void>;
+  toggleUserStatus(id: number, isActive: boolean): Promise<User>;
   validateLogin(username: string, password: string): Promise<User | null>;
   
   // Patient methods
@@ -70,6 +74,37 @@ export class DatabaseStorage implements IStorage {
     };
     
     const [user] = await db.insert(users).values([userData]).returning();
+    return user;
+  }
+
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  async updateUser(id: number, updateUser: Partial<InsertUser>): Promise<User> {
+    // Hash password if provided
+    const userData = updateUser.password 
+      ? { ...updateUser, password: await bcrypt.hash(updateUser.password, 12) }
+      : updateUser;
+    
+    const [user] = await db
+      .update(users)
+      .set({ ...userData, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  }
+
+  async toggleUserStatus(id: number, isActive: boolean): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ isActive, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
     return user;
   }
 
