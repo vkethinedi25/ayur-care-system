@@ -94,28 +94,27 @@ export default function Appointments() {
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ayur-primary"></div>
             </div>
+          ) : appointments.length === 0 ? (
+            <div className="py-8 text-center text-ayur-gray-500">
+              No appointments found. Schedule your first appointment to get started.
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-ayur-gray-200">
-                    <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Patient</th>
-                    <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Date & Time</th>
-                    <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Type</th>
-                    <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Duration</th>
-                    <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Status</th>
-                    <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {appointments.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-8 text-center text-ayur-gray-500">
-                        No appointments found. Schedule your first appointment to get started.
-                      </td>
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-ayur-gray-200">
+                      <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Patient</th>
+                      <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Date & Time</th>
+                      <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Type</th>
+                      <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Duration</th>
+                      <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Status</th>
+                      <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Actions</th>
                     </tr>
-                  ) : (
-                    appointments.map((appointment) => {
+                  </thead>
+                  <tbody>
+                    {appointments.map((appointment) => {
                       const { date, time } = formatDateTime(appointment.appointmentDate.toString());
                       
                       return (
@@ -159,11 +158,64 @@ export default function Appointments() {
                           </td>
                         </tr>
                       );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="lg:hidden space-y-4">
+                {appointments.map((appointment) => {
+                  const { date, time } = formatDateTime(appointment.appointmentDate.toString());
+                  
+                  return (
+                    <Card key={appointment.id} className="p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-start space-x-3">
+                        <Avatar className="w-12 h-12">
+                          <AvatarImage src={`https://images.unsplash.com/photo-1494790108755?ixlib=rb-4.0.3&w=48&h=48&fit=crop&crop=face`} />
+                          <AvatarFallback>{appointment.patient?.fullName?.split(' ').map(n => n[0]).join('') || 'NA'}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h3 className="font-medium text-ayur-gray-900">{appointment.patient?.fullName || 'Unknown Patient'}</h3>
+                              <p className="text-sm text-ayur-gray-500">{appointment.patient?.patientId || 'N/A'}</p>
+                            </div>
+                            <div className="flex space-x-1 ml-2">
+                              <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700" title="Mark Complete">
+                                <CheckCircle className="w-4 h-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700" title="Reschedule">
+                                <Clock className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-2">
+                            <p className="text-sm font-medium text-ayur-gray-900">{date}</p>
+                            <p className="text-sm text-ayur-gray-500">{time}</p>
+                          </div>
+                          
+                          <div className="mt-3 flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <Badge className={getStatusColor(appointment.status)} variant="secondary">
+                                {appointment.status}
+                              </Badge>
+                              <span className="text-sm text-ayur-gray-500 capitalize">
+                                {appointment.type}
+                              </span>
+                            </div>
+                            <span className="text-sm text-ayur-gray-500">
+                              {appointment.duration} mins
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </>
           )}
               </CardContent>
             </Card>

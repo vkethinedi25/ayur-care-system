@@ -71,28 +71,27 @@ export default function Prescriptions() {
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ayur-primary"></div>
             </div>
+          ) : filteredPrescriptions.length === 0 ? (
+            <div className="py-8 text-center text-ayur-gray-500">
+              {searchQuery ? "No prescriptions found matching your search." : "No prescriptions found. Create your first prescription to get started."}
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-ayur-gray-200">
-                    <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Patient</th>
-                    <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Diagnosis</th>
-                    <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Medications</th>
-                    <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Date</th>
-                    <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Follow-up</th>
-                    <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredPrescriptions.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-8 text-center text-ayur-gray-500">
-                        {searchQuery ? "No prescriptions found matching your search." : "No prescriptions found. Create your first prescription to get started."}
-                      </td>
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-ayur-gray-200">
+                      <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Patient</th>
+                      <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Diagnosis</th>
+                      <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Medications</th>
+                      <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Date</th>
+                      <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Follow-up</th>
+                      <th className="text-left py-3 px-4 font-medium text-ayur-gray-700">Actions</th>
                     </tr>
-                  ) : (
-                    filteredPrescriptions.map((prescription) => (
+                  </thead>
+                  <tbody>
+                    {filteredPrescriptions.map((prescription) => (
                       <tr key={prescription.id} className="border-b border-ayur-gray-100 hover:bg-ayur-gray-50">
                         <td className="py-4 px-4">
                           <div className="flex items-center space-x-3">
@@ -146,11 +145,74 @@ export default function Prescriptions() {
                           </div>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="lg:hidden space-y-4">
+                {filteredPrescriptions.map((prescription) => (
+                  <Card key={prescription.id} className="p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-start space-x-3">
+                      <Avatar className="w-12 h-12 shrink-0">
+                        <AvatarImage src={`https://images.unsplash.com/photo-1494790108755?ixlib=rb-4.0.3&w=48&h=48&fit=crop&crop=face`} />
+                        <AvatarFallback>{prescription.patient?.fullName?.split(' ').map(n => n[0]).join('') || 'NA'}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h3 className="font-medium text-ayur-gray-900">{prescription.patient?.fullName || 'Unknown Patient'}</h3>
+                            <p className="text-sm text-ayur-gray-500">{prescription.patient?.patientId || 'N/A'}</p>
+                          </div>
+                          <div className="flex space-x-1 ml-2">
+                            <Button variant="ghost" size="sm" className="text-ayur-gray-400 hover:text-ayur-gray-600">
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            {prescription.prescriptionUrl && (
+                              <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
+                                <Download className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="mt-2">
+                          <p className="text-sm font-medium text-ayur-gray-900">Diagnosis:</p>
+                          <p className="text-sm text-ayur-gray-700">{prescription.diagnosis}</p>
+                        </div>
+                        
+                        <div className="mt-2">
+                          <p className="text-sm font-medium text-ayur-gray-900">Medications:</p>
+                          <p className="text-sm text-ayur-gray-700">{formatMedications(prescription.medications)}</p>
+                        </div>
+                        
+                        <div className="mt-3 flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            {prescription.followUpDate ? (
+                              <Badge className="bg-blue-100 text-blue-800" variant="secondary">
+                                Follow-up: {new Date(prescription.followUpDate).toLocaleDateString('en-IN', {
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-ayur-gray-500">No follow-up scheduled</span>
+                            )}
+                          </div>
+                          <span className="text-xs text-ayur-gray-500">
+                            {new Date(prescription.createdAt).toLocaleDateString('en-IN', {
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

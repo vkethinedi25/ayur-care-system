@@ -39,7 +39,7 @@ function AppContent() {
   return (
     <div className="min-h-screen flex bg-ayur-gray-50">
       <Sidebar />
-      <main className="flex-1 ml-64 p-8">
+      <main className="flex-1 lg:ml-64 pt-16 lg:pt-0 p-4 lg:p-8">
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/patients" component={Patients} />

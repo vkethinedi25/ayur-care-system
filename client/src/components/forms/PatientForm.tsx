@@ -89,17 +89,17 @@ export default function PatientForm({ open, onOpenChange }: PatientFormProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-screen overflow-y-auto">
+      <DialogContent className="max-w-4xl w-full max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-semibold text-ayur-gray-900">Add New Patient</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-xl sm:text-2xl font-semibold text-ayur-gray-900">Add New Patient</DialogTitle>
+          <DialogDescription className="text-sm sm:text-base">
             Create a new patient record with complete Ayurvedic assessment and contact information.
           </DialogDescription>
         </DialogHeader>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {/* Personal Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium text-ayur-gray-900">Personal Information</h3>
@@ -118,7 +118,7 @@ export default function PatientForm({ open, onOpenChange }: PatientFormProps) {
                   )}
                 />
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="age"
