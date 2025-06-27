@@ -87,9 +87,9 @@ export default function UserForm({ open, onOpenChange, editingUser, onSuccess }:
         const updateData = userData.password 
           ? userData 
           : { ...userData, password: undefined };
-        return await apiRequest(`/api/users/${editingUser.id}`, "PATCH", updateData);
+        return await apiRequest("PATCH", `/api/users/${editingUser.id}`, updateData);
       } else {
-        return await apiRequest("/api/users", "POST", userData);
+        return await apiRequest("POST", "/api/users", userData);
       }
     },
     onSuccess: () => {

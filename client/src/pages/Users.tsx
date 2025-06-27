@@ -24,7 +24,7 @@ export default function Users() {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: number) => {
-      await apiRequest(`/api/users/${userId}`, "DELETE");
+      await apiRequest("DELETE", `/api/users/${userId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
@@ -44,7 +44,7 @@ export default function Users() {
 
   const toggleUserStatusMutation = useMutation({
     mutationFn: async ({ userId, isActive }: { userId: number; isActive: boolean }) => {
-      await apiRequest(`/api/users/${userId}/toggle-status`, "PATCH", { isActive });
+      await apiRequest("PATCH", `/api/users/${userId}/toggle-status`, { isActive });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
