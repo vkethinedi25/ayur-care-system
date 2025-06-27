@@ -2,11 +2,13 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import TopBar from "@/components/layout/TopBar";
 import AppointmentForm from "@/components/forms/AppointmentForm";
+import AppointmentCalendar from "@/components/calendar/AppointmentCalendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CalendarPlus, Clock, CheckCircle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CalendarPlus, Clock, CheckCircle, List, Calendar } from "lucide-react";
 import { Appointment, Patient, User } from "@/lib/types";
 
 type AppointmentWithDetails = Appointment & {
@@ -54,9 +56,9 @@ export default function Appointments() {
         subtitle="Manage patient appointments and schedules"
       />
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
-          <CardTitle className="text-xl font-semibold text-ayur-gray-900">All Appointments</CardTitle>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-semibold text-ayur-gray-900">Appointments</h1>
           <Button 
             onClick={() => setAppointmentFormOpen(true)}
             className="bg-ayur-primary text-white hover:bg-ayur-primary-600"
@@ -64,8 +66,30 @@ export default function Appointments() {
             <CalendarPlus className="w-4 h-4 mr-2" />
             Schedule Appointment
           </Button>
-        </CardHeader>
-        <CardContent>
+        </div>
+
+        <Tabs defaultValue="calendar" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="calendar" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Calendar View
+            </TabsTrigger>
+            <TabsTrigger value="list" className="flex items-center gap-2">
+              <List className="h-4 w-4" />
+              List View
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="calendar" className="mt-6">
+            <AppointmentCalendar appointments={appointments} />
+          </TabsContent>
+
+          <TabsContent value="list" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl font-semibold text-ayur-gray-900">All Appointments</CardTitle>
+              </CardHeader>
+              <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ayur-primary"></div>
@@ -141,8 +165,11 @@ export default function Appointments() {
               </table>
             </div>
           )}
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
 
       <AppointmentForm 
         open={appointmentFormOpen} 

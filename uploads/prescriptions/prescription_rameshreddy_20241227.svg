@@ -1,0 +1,70 @@
+<svg width="600" height="800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .header { font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; fill: #2d4a22; }
+      .subheader { font-family: Arial, sans-serif; font-size: 14px; fill: #4a5568; }
+      .title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; fill: #2d4a22; }
+      .content { font-family: Arial, sans-serif; font-size: 12px; fill: #1a202c; }
+      .medicine { font-family: Arial, sans-serif; font-size: 11px; fill: #2d3748; }
+      .border { stroke: #2d4a22; stroke-width: 2; fill: none; }
+    </style>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="600" height="800" fill="#fefefe" />
+  
+  <!-- Border -->
+  <rect x="20" y="20" width="560" height="760" class="border" />
+  
+  <!-- Header -->
+  <text x="300" y="60" text-anchor="middle" class="header">Dr. P. Murali Krishna</text>
+  <text x="300" y="80" text-anchor="middle" class="subheader">BAMS, MD (Ayurveda)</text>
+  <text x="300" y="100" text-anchor="middle" class="subheader">Reg. No: AP-AYU-12345</text>
+  
+  <!-- Clinic Info -->
+  <text x="50" y="130" class="subheader">Krishna Ayurvedic Clinic</text>
+  <text x="50" y="150" class="subheader">123 Main Street, Hyderabad - 500001</text>
+  <text x="50" y="170" class="subheader">Ph: +91 9876543210</text>
+  
+  <!-- Date -->
+  <text x="450" y="150" class="subheader">Date: 27/12/2024</text>
+  
+  <!-- Patient Info -->
+  <line x1="50" y1="190" x2="550" y2="190" stroke="#2d4a22" stroke-width="1"/>
+  <text x="50" y="220" class="title">Patient Details:</text>
+  <text x="50" y="245" class="content">Name: Ramesh Reddy</text>
+  <text x="300" y="245" class="content">Age: 52 Years</text>
+  <text x="50" y="265" class="content">Gender: Male</text>
+  <text x="300" y="265" class="content">Patient ID: DR.P.MURALI5</text>
+  
+  <!-- Diagnosis -->
+  <line x1="50" y1="285" x2="550" y2="285" stroke="#2d4a22" stroke-width="1"/>
+  <text x="50" y="315" class="title">Diagnosis:</text>
+  <text x="50" y="340" class="content">Sandhigata Vata (Osteoarthritis)</text>
+  <text x="50" y="360" class="content">Vata Dosha Aggravation</text>
+  
+  <!-- Prescription -->
+  <line x1="50" y1="380" x2="550" y2="380" stroke="#2d4a22" stroke-width="1"/>
+  <text x="50" y="410" class="title">Prescription:</text>
+  
+  <text x="50" y="440" class="medicine">1. Yogaraja Guggulu - 2 tablets twice daily after meals</text>
+  <text x="50" y="460" class="medicine">2. Dhanwantharam Tailam - For external application</text>
+  <text x="50" y="480" class="medicine">3. Dashmoolarishta - 15ml twice daily after meals</text>
+  <text x="50" y="500" class="medicine">4. Mahayogaraja Guggulu - 1 tablet at bedtime</text>
+  
+  <!-- Lifestyle -->
+  <line x1="50" y1="520" x2="550" y2="520" stroke="#2d4a22" stroke-width="1"/>
+  <text x="50" y="550" class="title">Lifestyle Recommendations:</text>
+  <text x="50" y="575" class="content">• Daily warm oil massage on affected joints</text>
+  <text x="50" y="595" class="content">• Gentle yoga and stretching exercises</text>
+  <text x="50" y="615" class="content">• Avoid cold foods and drinks</text>
+  <text x="50" y="635" class="content">• Include turmeric and ginger in diet</text>
+  
+  <!-- Follow-up -->
+  <line x1="50" y1="655" x2="550" y2="655" stroke="#2d4a22" stroke-width="1"/>
+  <text x="50" y="685" class="title">Follow-up: After 10 days</text>
+  
+  <!-- Doctor signature -->
+  <text x="400" y="750" class="content">Dr. P. Murali Krishna</text>
+  <text x="400" y="770" class="content">BAMS, MD (Ayurveda)</text>
+</svg>
