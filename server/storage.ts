@@ -882,20 +882,16 @@ export class DatabaseStorage implements IStorage {
   }> {
     try {
       // Get total patients count
-      const totalPatientsResult = await db.select({ count: count() }).from(patients);
-      const totalPatients = Number(totalPatientsResult[0]?.count) || 0;
+      const allPatients = await db.select().from(patients);
+      const totalPatients = allPatients.length;
 
       // Get total doctors count
-      const totalDoctorsResult = await db.select({ count: count() })
-        .from(users)
-        .where(eq(users.role, 'doctor'));
-      const totalDoctors = Number(totalDoctorsResult[0]?.count) || 0;
+      const allDoctors = await db.select().from(users).where(eq(users.role, 'doctor'));
+      const totalDoctors = allDoctors.length;
 
       // Get total staff count (non-admin, non-doctor users)
-      const totalStaffResult = await db.select({ count: count() })
-        .from(users)
-        .where(and(ne(users.role, 'admin'), ne(users.role, 'doctor')));
-      const totalStaff = Number(totalStaffResult[0]?.count) || 0;
+      const allStaff = await db.select().from(users).where(eq(users.role, 'staff'));
+      const totalStaff = allStaff.length;
 
       // Get monthly revenue (current month)
       const startOfMonth = new Date();
@@ -907,46 +903,43 @@ export class DatabaseStorage implements IStorage {
       endOfMonth.setDate(0);
       endOfMonth.setHours(23, 59, 59, 999);
 
-      const monthlyRevenueResult = await db.select({ 
-        total: sum(payments.amount)
-      })
-      .from(payments)
-      .where(and(
-        eq(payments.status, 'paid'),
-        gte(payments.createdAt, startOfMonth),
-        lte(payments.createdAt, endOfMonth)
-      ));
-      const monthlyRevenue = Number(monthlyRevenueResult[0]?.total) || 0;
+      const monthlyPayments = await db.select()
+        .from(payments)
+        .where(and(
+          eq(payments.status, 'paid'),
+          gte(payments.createdAt, startOfMonth),
+          lte(payments.createdAt, endOfMonth)
+        ));
+      const monthlyRevenue = monthlyPayments.reduce((sum, payment) => sum + payment.amount, 0);
 
       // Get pending payments count
-      const pendingPaymentsResult = await db.select({ count: count() })
+      const pendingPaymentsList = await db.select()
         .from(payments)
         .where(eq(payments.status, 'pending'));
-      const pendingPayments = Number(pendingPaymentsResult[0]?.count) || 0;
+      const pendingPayments = pendingPaymentsList.length;
 
       // Get scheduled appointments count (future appointments)
       const now = new Date();
-      const scheduledAppointmentsResult = await db.select({ count: count() })
+      const scheduledAppointmentsList = await db.select()
         .from(appointments)
         .where(and(
           gte(appointments.appointmentDate, now),
           ne(appointments.status, 'cancelled')
         ));
-      const scheduledAppointments = Number(scheduledAppointmentsResult[0]?.count) || 0;
+      const scheduledAppointments = scheduledAppointmentsList.length;
 
       // Get active users count (users who logged in within last 30 days)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
-      const activeUsersResult = await db.select({ 
-        count: countDistinct(userLoginLogs.userId)
-      })
-      .from(userLoginLogs)
-      .where(and(
-        gte(userLoginLogs.loginTime, thirtyDaysAgo),
-        eq(userLoginLogs.loginStatus, 'success')
-      ));
-      const activeUsers = Number(activeUsersResult[0]?.count) || 0;
+      const recentLogins = await db.select()
+        .from(userLoginLogs)
+        .where(and(
+          gte(userLoginLogs.loginTime, thirtyDaysAgo),
+          eq(userLoginLogs.loginStatus, 'success')
+        ));
+      const uniqueUserIds = new Set(recentLogins.map(log => log.userId));
+      const activeUsers = uniqueUserIds.size;
 
       return {
         totalPatients,
