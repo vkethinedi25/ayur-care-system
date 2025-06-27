@@ -20,6 +20,7 @@ import Sidebar from "@/components/layout/Sidebar";
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  // Render loading state
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-ayur-gray-50">
@@ -28,10 +29,12 @@ function AppContent() {
     );
   }
 
+  // Render login page for unauthenticated users
   if (!isAuthenticated) {
     return <Login />;
   }
 
+  // Render main application for authenticated users
   return (
     <div className="min-h-screen flex bg-ayur-gray-50">
       <Sidebar />

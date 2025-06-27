@@ -20,6 +20,21 @@ export function useAuth() {
   
   const { data: user, isLoading, error } = useQuery({
     queryKey: ["/api/auth/user"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/user", {
+        credentials: "include",
+      });
+      
+      if (res.status === 401) {
+        return null; // User is not authenticated
+      }
+      
+      if (!res.ok) {
+        throw new Error(`${res.status}: ${res.statusText}`);
+      }
+      
+      return await res.json();
+    },
     retry: false,
     refetchOnWindowFocus: false,
     staleTime: 60000, // Cache for 1 minute
@@ -39,11 +54,16 @@ export function useAuth() {
     }
   }, [queryClient]);
 
+  const refreshAuth = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+  }, [queryClient]);
+
   return {
     user,
     isLoading,
     isAuthenticated: !!user,
     error,
     logout,
+    refreshAuth,
   };
 }
