@@ -22,7 +22,7 @@ export interface IStorage {
   validateDoctorNameUniqueness(fullName: string, excludeId?: number): Promise<boolean>;
   
   // Patient methods
-  getPatients(limit?: number, offset?: number, search?: string): Promise<Patient[]>;
+  getPatients(limit?: number, offset?: number, search?: string, doctorId?: number): Promise<Patient[]>;
   getPatient(id: number): Promise<Patient | undefined>;
   getPatientByPatientId(patientId: string): Promise<Patient | undefined>;
   createPatient(patient: InsertPatient, doctorId: number): Promise<Patient>;
@@ -165,17 +165,32 @@ export class DatabaseStorage implements IStorage {
     return true; // No conflicts
   }
 
-  async getPatients(limit = 50, offset = 0, search?: string): Promise<Patient[]> {
+  async getPatients(limit = 50, offset = 0, search?: string, doctorId?: number): Promise<Patient[]> {
     let query = db.select().from(patients);
     
+    // Filter by doctor who added the patient if doctorId is provided
+    if (doctorId) {
+      query = query.where(eq(patients.doctorId, doctorId));
+    }
+    
     if (search) {
-      query = query.where(
-        or(
-          ilike(patients.fullName, `%${search}%`),
-          ilike(patients.patientId, `%${search}%`),
-          ilike(patients.phoneNumber, `%${search}%`)
-        )
-      );
+      const searchConditions = [
+        ilike(patients.fullName, `%${search}%`),
+        ilike(patients.patientId, `%${search}%`),
+        ilike(patients.phoneNumber, `%${search}%`)
+      ];
+
+      if (doctorId) {
+        // Combine doctor filter with search conditions
+        query = query.where(
+          and(
+            eq(patients.doctorId, doctorId),
+            or(...searchConditions)
+          )
+        );
+      } else {
+        query = query.where(or(...searchConditions));
+      }
     }
     
     return await query

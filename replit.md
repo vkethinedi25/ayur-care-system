@@ -115,9 +115,15 @@ The system uses a comprehensive PostgreSQL schema with the following main entiti
 - **File Storage**: Local uploads directory with configurable limits
 
 ## Changelog
+- June 27, 2025. Doctor-based patient filtering implementation:
+  - Added doctorId column to patients table with foreign key reference to users
+  - Modified patient API endpoint to filter patients by the doctor who added them
+  - Enhanced getPatients method to support doctor-based filtering with search functionality
+  - Updated database structure to ensure data privacy between doctors
+  - Each doctor now only sees patients they personally added to the system
 - June 27, 2025. Security enhancements and patient ID system implementation:
   - Removed demo credentials from login page for production deployment
-  - Implemented doctor-based patient ID generation (e.g., MUR1, MUR2)
+  - Implemented doctor-based patient ID generation (e.g., DR.K1, DR.K2)
   - Enhanced search functionality to include patient ID searches
   - Fixed logout functionality with proper session management
   - Set 30-minute session timeout for enhanced security

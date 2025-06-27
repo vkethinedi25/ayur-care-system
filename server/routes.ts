@@ -228,13 +228,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Patient routes
-  app.get("/api/patients", async (req, res) => {
+  app.get("/api/patients", requireAuth, async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
       const search = req.query.search as string;
+      const doctorId = req.session.userId!;
       
-      const patients = await storage.getPatients(limit, offset, search);
+      // Filter patients by the doctor who added them
+      const patients = await storage.getPatients(limit, offset, search, doctorId);
       res.json(patients);
     } catch (error) {
       console.error("Error fetching patients:", error);

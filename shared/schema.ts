@@ -29,6 +29,7 @@ export const users = pgTable("users", {
 export const patients = pgTable("patients", {
   id: serial("id").primaryKey(),
   patientId: text("patient_id").notNull().unique(),
+  doctorId: integer("doctor_id").notNull().references(() => users.id),
   fullName: text("full_name").notNull(),
   age: integer("age").notNull(),
   gender: text("gender").notNull(),
