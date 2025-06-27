@@ -1,5 +1,7 @@
 import session from "express-session";
 import connectPg from "connect-pg-simple";
+import passport from "passport";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import type { Express, RequestHandler } from "express";
 import { storage } from "./storage";
 
@@ -24,6 +26,79 @@ export function getSession() {
       maxAge: sessionTtl,
     },
   });
+}
+
+export function setupGoogleAuth(app: Express) {
+  // Initialize passport
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  // Serialize/deserialize user for session
+  passport.serializeUser((user: any, done) => {
+    done(null, user.id);
+  });
+
+  passport.deserializeUser(async (id: number, done) => {
+    try {
+      const user = await storage.getUser(id);
+      done(null, user);
+    } catch (error) {
+      done(error, null);
+    }
+  });
+
+  // Google OAuth Strategy
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    passport.use(new GoogleStrategy({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "/api/auth/google/callback"
+    }, async (accessToken, refreshToken, profile, done) => {
+      try {
+        // Check if user exists with this Google ID
+        let user = await storage.getUserByGoogleId(profile.id);
+        
+        if (!user) {
+          // Check if user exists with this email
+          user = await storage.getUserByEmail(profile.emails?.[0]?.value || '');
+          
+          if (user) {
+            // Link Google account to existing user
+            await storage.linkGoogleAccount(user.id, profile.id);
+          } else {
+            // Create new user
+            const newUser = {
+              username: profile.emails?.[0]?.value || `google_${profile.id}`,
+              email: profile.emails?.[0]?.value || null,
+              full_name: profile.displayName || 'Google User',
+              role: 'staff', // Default role for Google users
+              is_active: true,
+              google_id: profile.id,
+              password: null // No password for OAuth users
+            };
+            user = await storage.createUserWithGoogle(newUser);
+          }
+        }
+        
+        return done(null, user);
+      } catch (error) {
+        return done(error, null);
+      }
+    }));
+  }
+
+  // Google auth routes
+  app.get('/api/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+  );
+
+  app.get('/api/auth/google/callback',
+    passport.authenticate('google', { failureRedirect: '/login' }),
+    (req, res) => {
+      // Successful authentication, redirect to dashboard
+      res.redirect('/');
+    }
+  );
 }
 
 export const requireAuth: RequestHandler = (req, res, next) => {
