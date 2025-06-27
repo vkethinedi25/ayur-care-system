@@ -44,10 +44,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, password } = loginSchema.parse(req.body);
       
+      // Capture login attempt details
+      const ipAddress = req.ip || req.connection.remoteAddress || null;
+      const userAgent = req.get('User-Agent') || null;
+      const sessionId = req.sessionID || null;
+      
+      // Basic location info (could be enhanced with IP geolocation service)
+      const location = {
+        ip: ipAddress,
+        timestamp: new Date().toISOString()
+      };
+
       const user = await storage.validateLogin(username, password);
+      
       if (!user) {
+        // Log failed login attempt if we can identify the user
+        const attemptedUser = await storage.getUserByUsername(username);
+        if (attemptedUser) {
+          await storage.createUserLoginLog({
+            userId: attemptedUser.id,
+            loginTime: new Date(),
+            ipAddress,
+            userAgent,
+            location,
+            sessionId,
+            loginStatus: "failed"
+          });
+        }
         return res.status(401).json({ message: "Invalid username or password" });
       }
+
+      if (!user.isActive) {
+        // Log account locked attempt
+        await storage.createUserLoginLog({
+          userId: user.id,
+          loginTime: new Date(),
+          ipAddress,
+          userAgent,
+          location,
+          sessionId,
+          loginStatus: "locked"
+        });
+        return res.status(401).json({ message: "Account is deactivated" });
+      }
+
+      // Log successful login
+      await storage.createUserLoginLog({
+        userId: user.id,
+        loginTime: new Date(),
+        ipAddress,
+        userAgent,
+        location,
+        sessionId,
+        loginStatus: "success"
+      });
       
       // Set session data
       req.session.userId = user.id;
