@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, UserCheck, Calendar, Stethoscope, Activity, TrendingUp, Clock } from "lucide-react";
+import { Users, UserCheck, Calendar, Stethoscope, Activity, TrendingUp, Clock, DollarSign } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -13,6 +13,7 @@ interface DoctorStats {
   activePatients: number;
   totalAppointments: number;
   monthlyAppointments: number;
+  monthlyRevenue: number;
   lastActive: string;
 }
 
@@ -61,12 +62,14 @@ export default function AdminDashboard() {
   // Fetch doctor statistics
   const { data: doctorStats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/admin/doctor-stats", selectedDoctorId],
+    queryFn: () => fetch(`/api/admin/doctor-stats?doctorId=${selectedDoctorId}`).then(res => res.json()),
     enabled: user?.role === 'admin' && !!selectedDoctorId,
   });
 
   // Fetch patients for selected doctor
   const { data: doctorPatients = [], isLoading: patientsLoading } = useQuery({
     queryKey: ["/api/admin/doctor-patients", selectedDoctorId],
+    queryFn: () => fetch(`/api/admin/doctor-patients?doctorId=${selectedDoctorId}`).then(res => res.json()),
     enabled: user?.role === 'admin' && !!selectedDoctorId,
   });
 
@@ -305,7 +308,7 @@ export default function AdminDashboard() {
             {selectedDoctorId && selectedDoctor && (
               <div className="space-y-6">
                 {/* Doctor Statistics */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                   <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center gap-2">
@@ -356,6 +359,20 @@ export default function AdminDashboard() {
                           <p className="text-sm font-medium">This Month</p>
                           <p className="text-2xl font-bold">
                             {statsLoading ? "..." : doctorStats?.monthlyAppointments || 0}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-green-600" />
+                        <div>
+                          <p className="text-sm font-medium">Monthly Revenue</p>
+                          <p className="text-2xl font-bold">
+                            {statsLoading ? "..." : `₹${doctorStats?.monthlyRevenue || 0}`}
                           </p>
                         </div>
                       </div>

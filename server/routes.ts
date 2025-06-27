@@ -589,9 +589,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/doctor-stats/:doctorId", requireRole(["admin"]), async (req, res) => {
+  app.get("/api/admin/doctor-stats", requireRole(["admin"]), async (req, res) => {
     try {
-      const doctorId = parseInt(req.params.doctorId);
+      const doctorId = parseInt(req.query.doctorId as string);
+      if (!doctorId) {
+        return res.status(400).json({ message: "Doctor ID is required" });
+      }
       const stats = await storage.getDoctorStats(doctorId);
       res.json(stats);
     } catch (error) {
@@ -600,9 +603,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/doctor-patients/:doctorId", requireRole(["admin"]), async (req, res) => {
+  app.get("/api/admin/doctor-patients", requireRole(["admin"]), async (req, res) => {
     try {
-      const doctorId = parseInt(req.params.doctorId);
+      const doctorId = parseInt(req.query.doctorId as string);
+      if (!doctorId) {
+        return res.status(400).json({ message: "Doctor ID is required" });
+      }
       const patients = await storage.getDoctorPatients(doctorId);
       res.json(patients);
     } catch (error) {

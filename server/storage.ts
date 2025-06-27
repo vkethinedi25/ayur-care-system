@@ -6,7 +6,7 @@ import {
   type PatientCounter, type UserLoginLog, type InsertUserLoginLog
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, gte, lte, ilike, or, count, sum, sql, countDistinct } from "drizzle-orm";
+import { eq, desc, and, gte, lte, ilike, or, count, sum, sql, countDistinct, ne } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 export interface IStorage {
@@ -751,6 +751,7 @@ export class DatabaseStorage implements IStorage {
     activePatients: number;
     totalAppointments: number;
     monthlyAppointments: number;
+    monthlyRevenue: number;
     lastActive: string;
   }> {
     // Get total patients count
@@ -803,6 +804,20 @@ export class DatabaseStorage implements IStorage {
     
     const monthlyAppointments = monthlyAppointmentsResult[0]?.count || 0;
 
+    // Get monthly revenue from payments
+    const monthlyRevenueResult = await db
+      .select({ total: sql<number>`cast(sum(${payments.amount}) as decimal)` })
+      .from(payments)
+      .leftJoin(appointments, eq(payments.appointmentId, appointments.id))
+      .where(
+        and(
+          eq(appointments.doctorId, doctorId),
+          gte(payments.createdAt, startOfMonth)
+        )
+      );
+    
+    const monthlyRevenue = Number(monthlyRevenueResult[0]?.total || 0);
+
     // Get last active date (most recent appointment)
     const lastAppointmentResult = await db
       .select({ appointmentDate: appointments.appointmentDate })
@@ -820,6 +835,7 @@ export class DatabaseStorage implements IStorage {
       activePatients,
       totalAppointments,
       monthlyAppointments,
+      monthlyRevenue,
       lastActive
     };
   }
@@ -877,10 +893,7 @@ export class DatabaseStorage implements IStorage {
     // Get total staff count (non-admin, non-doctor users)
     const totalStaffResult = await db.select({ count: sql<number>`count(*)` })
       .from(users)
-      .where(and(
-        ne(users.role, 'admin'),
-        ne(users.role, 'doctor')
-      ));
+      .where(sql`${users.role} NOT IN ('admin', 'doctor')`);
     const totalStaff = totalStaffResult[0]?.count || 0;
 
     // Get monthly revenue (current month)
