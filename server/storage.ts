@@ -6,12 +6,14 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, lte, ilike, or, count, sum } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 
 export interface IStorage {
   // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  validateLogin(username: string, password: string): Promise<User | null>;
   
   // Patient methods
   getPatients(limit?: number, offset?: number, search?: string): Promise<Patient[]>;
@@ -60,7 +62,34 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+    // Hash the password before storing
+    const hashedPassword = await bcrypt.hash(insertUser.password, 12);
+    const userData = {
+      ...insertUser,
+      password: hashedPassword
+    };
+    
+    const [user] = await db.insert(users).values([userData]).returning();
+    return user;
+  }
+
+  async validateLogin(username: string, password: string): Promise<User | null> {
+    const [user] = await db.select().from(users).where(
+      and(
+        eq(users.username, username),
+        eq(users.isActive, true)
+      )
+    );
+    
+    if (!user) {
+      return null;
+    }
+    
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return null;
+    }
+    
     return user;
   }
 

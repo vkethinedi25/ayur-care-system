@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 interface User {
   id: number;
@@ -6,41 +6,30 @@ interface User {
   email: string;
   fullName: string;
   role: string;
+  specialization?: string;
+  licenseNumber?: string;
+  isActive: boolean;
+  lastLogin?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>({
-    id: 1,
-    username: "dr.sharma",
-    email: "dr.sharma@clinic.com",
-    fullName: "Dr. Rajesh Sharma",
-    role: "doctor"
+  const { data: user, isLoading, error } = useQuery({
+    queryKey: ["/api/auth/user"],
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchInterval: false,
+    refetchIntervalInBackground: false,
+    staleTime: Infinity, // Don't auto-refetch
+    enabled: false, // Disable automatic fetching
   });
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    // Using test user from database
-  }, []);
-
-  const login = async (username: string, password: string) => {
-    // Mock login - in real app would call API
-    setUser({
-      id: 1,
-      username,
-      email: "sarah@ayurcare.com",
-      fullName: "Dr. Sarah Wilson",
-      role: "doctor"
-    });
-  };
-
-  const logout = () => {
-    setUser(null);
-  };
 
   return {
     user,
     isLoading,
-    login,
-    logout,
+    isAuthenticated: !!user,
+    error,
   };
 }

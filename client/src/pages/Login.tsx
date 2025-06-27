@@ -17,10 +17,14 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-export default function Login() {
+interface LoginProps {
+  onLoginSuccess: () => void;
+}
+
+export default function Login({ onLoginSuccess }: LoginProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+
   const { toast } = useToast();
 
   const form = useForm<LoginForm>({
@@ -34,15 +38,33 @@ export default function Login() {
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     try {
-      await login(data.username, data.password);
-      toast({
-        title: "Welcome back!",
-        description: "You have been successfully logged in.",
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(data),
       });
+
+      if (response.ok) {
+        toast({
+          title: "Welcome back!",
+          description: "You have been successfully logged in.",
+        });
+        onLoginSuccess();
+      } else {
+        const error = await response.text();
+        toast({
+          title: "Login failed",
+          description: error || "Invalid username or password. Please try again.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
         title: "Login failed",
-        description: "Invalid username or password. Please try again.",
+        description: error instanceof Error ? error.message : "Network error occurred.",
         variant: "destructive",
       });
     } finally {
