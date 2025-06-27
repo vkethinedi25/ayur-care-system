@@ -196,9 +196,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard routes
-  app.get("/api/dashboard/metrics", async (req, res) => {
+  app.get("/api/dashboard/metrics", requireAuth, async (req, res) => {
     try {
-      const metrics = await storage.getDashboardMetrics();
+      const doctorId = req.session.userId!;
+      const metrics = await storage.getDashboardMetrics(doctorId);
       res.json(metrics);
     } catch (error) {
       console.error("Error fetching dashboard metrics:", error);
@@ -206,9 +207,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/dashboard/today-appointments", async (req, res) => {
+  app.get("/api/dashboard/today-appointments", requireAuth, async (req, res) => {
     try {
-      const appointments = await storage.getTodayAppointments();
+      const doctorId = req.session.userId!;
+      const appointments = await storage.getTodayAppointments(doctorId);
       res.json(appointments);
     } catch (error) {
       console.error("Error fetching today's appointments:", error);
@@ -216,10 +218,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/dashboard/recent-patients", async (req, res) => {
+  app.get("/api/dashboard/recent-patients", requireAuth, async (req, res) => {
     try {
+      const doctorId = req.session.userId!;
       const limit = parseInt(req.query.limit as string) || 5;
-      const patients = await storage.getRecentPatients(limit);
+      const patients = await storage.getRecentPatients(limit, doctorId);
       res.json(patients);
     } catch (error) {
       console.error("Error fetching recent patients:", error);
@@ -291,9 +294,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Appointment routes
-  app.get("/api/appointments", async (req, res) => {
+  app.get("/api/appointments", requireAuth, async (req, res) => {
     try {
-      const doctorId = req.query.doctorId ? parseInt(req.query.doctorId as string) : undefined;
+      const doctorId = req.session.userId!; // Use logged-in doctor's ID
       const date = req.query.date ? new Date(req.query.date as string) : undefined;
       
       const appointments = await storage.getAppointments(doctorId, date);
@@ -350,10 +353,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Prescription routes
-  app.get("/api/prescriptions", async (req, res) => {
+  app.get("/api/prescriptions", requireAuth, async (req, res) => {
     try {
+      const doctorId = req.session.userId!; // Filter by logged-in doctor
       const patientId = req.query.patientId ? parseInt(req.query.patientId as string) : undefined;
-      const prescriptions = await storage.getPrescriptions(patientId);
+      
+      // Only get prescriptions for patients that belong to this doctor
+      const prescriptions = await storage.getPrescriptions(patientId, doctorId);
       res.json(prescriptions);
     } catch (error) {
       console.error("Error fetching prescriptions:", error);
@@ -423,10 +429,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Payment routes
-  app.get("/api/payments", async (req, res) => {
+  app.get("/api/payments", requireAuth, async (req, res) => {
     try {
+      const doctorId = req.session.userId!; // Filter by logged-in doctor
       const patientId = req.query.patientId ? parseInt(req.query.patientId as string) : undefined;
-      const payments = await storage.getPayments(patientId);
+      
+      // Only get payments for patients that belong to this doctor
+      const payments = await storage.getPayments(patientId, doctorId);
       res.json(payments);
     } catch (error) {
       console.error("Error fetching payments:", error);

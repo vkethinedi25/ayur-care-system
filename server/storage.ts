@@ -36,25 +36,25 @@ export interface IStorage {
   updateAppointment(id: number, appointment: Partial<InsertAppointment>): Promise<Appointment>;
   
   // Prescription methods
-  getPrescriptions(patientId?: number): Promise<(Prescription & { patient: Patient; doctor: User })[]>;
+  getPrescriptions(patientId?: number, doctorId?: number): Promise<(Prescription & { patient: Patient; doctor: User })[]>;
   getPrescription(id: number): Promise<(Prescription & { patient: Patient; doctor: User }) | undefined>;
   createPrescription(prescription: InsertPrescription): Promise<Prescription>;
   
   // Payment methods
-  getPayments(patientId?: number): Promise<(Payment & { patient: Patient })[]>;
+  getPayments(patientId?: number, doctorId?: number): Promise<(Payment & { patient: Patient })[]>;
   createPayment(payment: InsertPayment): Promise<Payment>;
   updatePaymentStatus(id: number, status: string, transactionId?: string): Promise<Payment>;
   
   // Dashboard methods
-  getDashboardMetrics(): Promise<{
+  getDashboardMetrics(doctorId?: number): Promise<{
     totalPatients: number;
     todayAppointments: number;
     monthlyRevenue: number;
     pendingPayments: number;
   }>;
   
-  getTodayAppointments(): Promise<(Appointment & { patient: Patient })[]>;
-  getRecentPatients(limit: number): Promise<Patient[]>;
+  getTodayAppointments(doctorId?: number): Promise<(Appointment & { patient: Patient })[]>;
+  getRecentPatients(limit: number, doctorId?: number): Promise<Patient[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -385,7 +385,7 @@ export class DatabaseStorage implements IStorage {
     return appointment;
   }
 
-  async getPrescriptions(patientId?: number): Promise<(Prescription & { patient: Patient; doctor: User })[]> {
+  async getPrescriptions(patientId?: number, doctorId?: number): Promise<(Prescription & { patient: Patient; doctor: User })[]> {
     let query = db
       .select({
         id: prescriptions.id,
@@ -407,8 +407,18 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(patients, eq(prescriptions.patientId, patients.id))
       .leftJoin(users, eq(prescriptions.doctorId, users.id));
 
+    let whereConditions = [];
+    
     if (patientId) {
-      query = query.where(eq(prescriptions.patientId, patientId));
+      whereConditions.push(eq(prescriptions.patientId, patientId));
+    }
+    
+    if (doctorId) {
+      whereConditions.push(eq(prescriptions.doctorId, doctorId));
+    }
+    
+    if (whereConditions.length > 0) {
+      query = query.where(and(...whereConditions));
     }
 
     return await query.orderBy(desc(prescriptions.createdAt));
@@ -448,7 +458,7 @@ export class DatabaseStorage implements IStorage {
     return prescription;
   }
 
-  async getPayments(patientId?: number): Promise<(Payment & { patient: Patient })[]> {
+  async getPayments(patientId?: number, doctorId?: number): Promise<(Payment & { patient: Patient })[]> {
     let query = db
       .select({
         id: payments.id,
@@ -466,8 +476,18 @@ export class DatabaseStorage implements IStorage {
       .from(payments)
       .leftJoin(patients, eq(payments.patientId, patients.id));
 
+    let whereConditions = [];
+    
     if (patientId) {
-      query = query.where(eq(payments.patientId, patientId));
+      whereConditions.push(eq(payments.patientId, patientId));
+    }
+    
+    if (doctorId) {
+      whereConditions.push(eq(patients.doctorId, doctorId));
+    }
+    
+    if (whereConditions.length > 0) {
+      query = query.where(and(...whereConditions));
     }
 
     return await query.orderBy(desc(payments.createdAt));
@@ -494,22 +514,26 @@ export class DatabaseStorage implements IStorage {
     return payment;
   }
 
-  async getDashboardMetrics(): Promise<{
+  async getDashboardMetrics(doctorId?: number): Promise<{
     totalPatients: number;
     todayAppointments: number;
     monthlyRevenue: number;
     pendingPayments: number;
   }> {
-    // Total patients
-    const [totalPatientsResult] = await db.select({ count: count() }).from(patients);
+    // Total patients - filter by doctor if provided
+    let totalPatientsQuery = db.select({ count: count() }).from(patients);
+    if (doctorId) {
+      totalPatientsQuery = totalPatientsQuery.where(eq(patients.doctorId, doctorId));
+    }
+    const [totalPatientsResult] = await totalPatientsQuery;
     
-    // Today's appointments
+    // Today's appointments - filter by doctor if provided
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     
-    const [todayAppointmentsResult] = await db
+    let todayAppointmentsQuery = db
       .select({ count: count() })
       .from(appointments)
       .where(
@@ -518,12 +542,24 @@ export class DatabaseStorage implements IStorage {
           lte(appointments.appointmentDate, tomorrow)
         )
       );
+    
+    if (doctorId) {
+      todayAppointmentsQuery = todayAppointmentsQuery.where(
+        and(
+          eq(appointments.doctorId, doctorId),
+          gte(appointments.appointmentDate, today),
+          lte(appointments.appointmentDate, tomorrow)
+        )
+      );
+    }
+    
+    const [todayAppointmentsResult] = await todayAppointmentsQuery;
 
-    // Monthly revenue
+    // Monthly revenue - filter by doctor's patients if provided
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     
-    const [monthlyRevenueResult] = await db
+    let monthlyRevenueQuery = db
       .select({ total: sum(payments.amount) })
       .from(payments)
       .where(
@@ -533,12 +569,40 @@ export class DatabaseStorage implements IStorage {
           lte(payments.paidAt, endOfMonth)
         )
       );
+    
+    if (doctorId) {
+      monthlyRevenueQuery = monthlyRevenueQuery
+        .innerJoin(patients, eq(payments.patientId, patients.id))
+        .where(
+          and(
+            eq(patients.doctorId, doctorId),
+            eq(payments.paymentStatus, 'completed'),
+            gte(payments.paidAt, startOfMonth),
+            lte(payments.paidAt, endOfMonth)
+          )
+        );
+    }
+    
+    const [monthlyRevenueResult] = await monthlyRevenueQuery;
 
-    // Pending payments
-    const [pendingPaymentsResult] = await db
+    // Pending payments - filter by doctor's patients if provided
+    let pendingPaymentsQuery = db
       .select({ total: sum(payments.amount) })
       .from(payments)
       .where(eq(payments.paymentStatus, 'pending'));
+    
+    if (doctorId) {
+      pendingPaymentsQuery = pendingPaymentsQuery
+        .innerJoin(patients, eq(payments.patientId, patients.id))
+        .where(
+          and(
+            eq(patients.doctorId, doctorId),
+            eq(payments.paymentStatus, 'pending')
+          )
+        );
+    }
+    
+    const [pendingPaymentsResult] = await pendingPaymentsQuery;
 
     return {
       totalPatients: totalPatientsResult.count,
@@ -548,11 +612,24 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getTodayAppointments(): Promise<(Appointment & { patient: Patient })[]> {
+  async getTodayAppointments(doctorId?: number): Promise<(Appointment & { patient: Patient })[]> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
+
+    let whereConditions = and(
+      gte(appointments.appointmentDate, today),
+      lte(appointments.appointmentDate, tomorrow)
+    );
+
+    if (doctorId) {
+      whereConditions = and(
+        eq(appointments.doctorId, doctorId),
+        gte(appointments.appointmentDate, today),
+        lte(appointments.appointmentDate, tomorrow)
+      );
+    }
 
     return await db
       .select({
@@ -569,21 +646,22 @@ export class DatabaseStorage implements IStorage {
       })
       .from(appointments)
       .leftJoin(patients, eq(appointments.patientId, patients.id))
-      .where(
-        and(
-          gte(appointments.appointmentDate, today),
-          lte(appointments.appointmentDate, tomorrow)
-        )
-      )
+      .where(whereConditions)
       .orderBy(appointments.appointmentDate);
   }
 
-  async getRecentPatients(limit: number): Promise<Patient[]> {
-    return await db
+  async getRecentPatients(limit: number, doctorId?: number): Promise<Patient[]> {
+    let query = db
       .select()
       .from(patients)
       .orderBy(desc(patients.createdAt))
       .limit(limit);
+    
+    if (doctorId) {
+      query = query.where(eq(patients.doctorId, doctorId));
+    }
+    
+    return await query;
   }
 }
 

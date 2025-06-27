@@ -115,6 +115,14 @@ The system uses a comprehensive PostgreSQL schema with the following main entiti
 - **File Storage**: Local uploads directory with configurable limits
 
 ## Changelog
+- June 27, 2025. Complete doctor-based data isolation implementation:
+  - Implemented comprehensive security enhancement across ALL pages and API endpoints
+  - Added authentication requirements to all sensitive endpoints (dashboard, appointments, prescriptions, payments)
+  - Enhanced storage interface with doctorId filtering parameter for all data types
+  - Updated all dashboard endpoints to filter by logged-in doctor (stats, recent patients, today's appointments)
+  - Modified appointments, prescriptions, and payments APIs to only show doctor's own data
+  - Complete data privacy implementation - doctors can only see their own patients, appointments, prescriptions, and payments
+  - Database structure ensures complete isolation between different doctors' data
 - June 27, 2025. Doctor-based patient filtering implementation:
   - Added doctorId column to patients table with foreign key reference to users
   - Modified patient API endpoint to filter patients by the doctor who added them
