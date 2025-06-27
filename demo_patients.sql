@@ -1,0 +1,5 @@
+-- Demo patients for Dr. P. Murali Krishna (assuming doctor ID 6 based on logs)
+INSERT INTO patients (patient_id, doctor_id, full_name, age, gender, phone_number, email, address, prakriti, vikriti, medical_history, allergies, emergency_contact_name, emergency_contact_phone, created_at, updated_at) VALUES
+('DR.P.MURALI1', 6, 'VenkateshK', 45, 'Male', '+91-9876543210', 'venkatesh.k@email.com', '123 MG Road, Hyderabad, Telangana 500001', 'Vata-Pitta', 'Kapha Vitiation', 'Hypertension, Diabetes Type 2', 'Shellfish, Peanuts', 'Lakshmi Venkatesh', '+91-9876543211', NOW(), NOW()),
+('DR.P.MURALI2', 6, 'Mastan Shaik', 38, 'Male', '+91-8765432109', 'mastan.shaik@email.com', '456 Jubilee Hills, Hyderabad, Telangana 500033', 'Pitta-Kapha', 'Vata Imbalance', 'Chronic Joint Pain, Gastritis', 'Dairy Products', 'Fatima Shaik', '+91-8765432108', NOW(), NOW()),
+('DR.P.MURALI3', 6, 'Swamy M', 52, 'Male', '+91-7654321098', 'swamy.m@email.com', '789 Banjara Hills, Hyderabad, Telangana 500034', 'Kapha-Vata', 'Pitta Excess', 'High Cholesterol, Sleep Disorders', 'Gluten, Soy', 'Radha Swamy', '+91-7654321097', NOW(), NOW());
