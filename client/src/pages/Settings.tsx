@@ -8,12 +8,14 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Settings as SettingsIcon, User, Bell, Shield, Database, Palette } from "lucide-react";
+import { Settings as SettingsIcon, User, Bell, Shield, Database, Palette, Server, HardDrive, Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import TopBar from "@/components/layout/TopBar";
 
 export default function Settings() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState({
     appointments: true,
     payments: false,
@@ -37,7 +39,7 @@ export default function Settings() {
       
       <div className="flex-1 space-y-6 p-8 pt-6">
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className={`grid w-full ${user?.role === 'admin' ? 'grid-cols-5' : 'grid-cols-4'}`}>
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Profile
@@ -50,10 +52,12 @@ export default function Settings() {
               <Shield className="h-4 w-4" />
               Security
             </TabsTrigger>
-            <TabsTrigger value="system" className="flex items-center gap-2">
-              <Database className="h-4 w-4" />
-              System
-            </TabsTrigger>
+            {user?.role === 'admin' && (
+              <TabsTrigger value="system" className="flex items-center gap-2">
+                <Database className="h-4 w-4" />
+                System
+              </TabsTrigger>
+            )}
             <TabsTrigger value="appearance" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
               Appearance
@@ -72,30 +76,49 @@ export default function Settings() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="fullName">Full Name</Label>
-                    <Input id="fullName" defaultValue="Dr. Rajesh Kumar" />
+                    <Input id="fullName" defaultValue={user?.fullName || ""} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" defaultValue="dr.rajesh@ayurhospital.com" />
+                    <Input id="email" type="email" defaultValue={user?.email || ""} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" defaultValue="+91 98765 43210" />
+                    <Label htmlFor="username">Username</Label>
+                    <Input id="username" defaultValue={user?.username || ""} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="role">Role</Label>
-                    <Select defaultValue="doctor">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="admin">Administrator</SelectItem>
-                        <SelectItem value="doctor">Doctor</SelectItem>
-                        <SelectItem value="staff">Staff</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={user?.role === 'admin' ? 'default' : user?.role === 'doctor' ? 'secondary' : 'outline'}>
+                        {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">Read-only</span>
+                    </div>
+                  </div>
+                </div>
+                {user?.specialization && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="specialization">Specialization</Label>
+                      <Input id="specialization" defaultValue={user.specialization} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="licenseNumber">License Number</Label>
+                      <Input id="licenseNumber" defaultValue={user.licenseNumber || ""} />
+                    </div>
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label>Account Status</Label>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={user?.isActive ? 'default' : 'destructive'}>
+                      {user?.isActive ? 'Active' : 'Inactive'}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                    </span>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -253,77 +276,211 @@ export default function Settings() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="system" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Database Settings</CardTitle>
-                <CardDescription>
-                  Database configuration and backup settings.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Database Status</p>
-                    <p className="text-sm text-muted-foreground">
-                      PostgreSQL • Connected • 6 patients, 6 appointments
-                    </p>
+          {user?.role === 'admin' && (
+            <TabsContent value="system" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Server className="h-5 w-5" />
+                    System Status
+                  </CardTitle>
+                  <CardDescription>
+                    Monitor application health and performance metrics.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Server Status</span>
+                        <Badge variant="outline" className="text-green-600 border-green-600">
+                          Online
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Database Status</span>
+                        <Badge variant="outline" className="text-green-600 border-green-600">
+                          Connected
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Uptime</span>
+                        <span className="text-sm text-muted-foreground">2h 15m</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Active Sessions</span>
+                        <span className="text-sm text-muted-foreground">3</span>
+                      </div>
+                    </div>
                   </div>
-                  <Badge variant="outline" className="text-green-600 border-green-600">
-                    Connected
-                  </Badge>
-                </div>
-                <Separator />
-                <div className="space-y-2">
-                  <Label>Backup Frequency</Label>
-                  <Select defaultValue="daily">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="hourly">Every Hour</SelectItem>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline">
-                    Create Backup Now
-                  </Button>
-                  <Button variant="outline">
-                    View Backup History
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Data Export</CardTitle>
-                <CardDescription>
-                  Export your data for backup or analysis purposes.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <Button variant="outline">
-                    Export Patients
-                  </Button>
-                  <Button variant="outline">
-                    Export Appointments
-                  </Button>
-                  <Button variant="outline">
-                    Export Prescriptions
-                  </Button>
-                  <Button variant="outline">
-                    Export Payments
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <HardDrive className="h-5 w-5" />
+                    Database Management
+                  </CardTitle>
+                  <CardDescription>
+                    Database configuration and backup settings.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Total Records</Label>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span>Patients</span>
+                          <span className="text-muted-foreground">0</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>Appointments</span>
+                          <span className="text-muted-foreground">0</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>Prescriptions</span>
+                          <span className="text-muted-foreground">0</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Storage Usage</Label>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span>Database Size</span>
+                          <span className="text-muted-foreground">2.4 MB</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>Uploads</span>
+                          <span className="text-muted-foreground">0 MB</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>Total Usage</span>
+                          <span className="text-muted-foreground">2.4 MB</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="space-y-2">
+                    <Label>Backup Frequency</Label>
+                    <Select defaultValue="daily">
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="hourly">Every Hour</SelectItem>
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm">
+                      Create Backup
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      View History
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5" />
+                    System Monitoring
+                  </CardTitle>
+                  <CardDescription>
+                    Application performance and user activity monitoring.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Today's Activity</Label>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span>Total Logins</span>
+                          <span className="text-muted-foreground">0</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>Failed Attempts</span>
+                          <span className="text-muted-foreground">0</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>New Patients</span>
+                          <span className="text-muted-foreground">0</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">System Health</Label>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span>Response Time</span>
+                          <span className="text-muted-foreground">245ms</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>Error Rate</span>
+                          <span className="text-muted-foreground">0%</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>Memory Usage</span>
+                          <span className="text-muted-foreground">45%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm">
+                      View Login Logs
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      System Reports
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Data Export & Import</CardTitle>
+                  <CardDescription>
+                    Export data for backup or analysis, and import data from other systems.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <Button variant="outline" size="sm">
+                      Export All Data
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      Export Patients
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      Export Appointments
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      Import Data
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      Data Templates
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      Migration Tools
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
           <TabsContent value="appearance" className="space-y-6">
             <Card>
