@@ -115,6 +115,11 @@ The system uses a comprehensive PostgreSQL schema with the following main entiti
 - **File Storage**: Local uploads directory with configurable limits
 
 ## Changelog
+- June 27, 2025. Repository prepared for GitHub deployment:
+  - Created comprehensive README.md with project documentation
+  - Added detailed DEPLOY_TO_GITHUB.md with step-by-step deployment instructions
+  - Fixed admin dashboard metrics display issues with reliable query methods
+  - Repository now ready for personal GitHub deployment with all documentation
 - June 27, 2025. Complete mobile-responsive design implementation:
   - Redesigned sidebar navigation with mobile-friendly drawer/sheet component using hamburger menu
   - Added responsive top navigation bar for mobile devices with collapsible search functionality

@@ -183,7 +183,7 @@ export default function PatientForm({ open, onOpenChange }: PatientFormProps) {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="patient@email.com" {...field} />
+                        <Input type="email" placeholder="patient@email.com" {...field} value={field.value || ""} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -903,41 +903,32 @@ export class DatabaseStorage implements IStorage {
       endOfMonth.setDate(0);
       endOfMonth.setHours(23, 59, 59, 999);
 
-      const monthlyPayments = await db.select()
-        .from(payments)
-        .where(and(
-          eq(payments.status, 'paid'),
-          gte(payments.createdAt, startOfMonth),
-          lte(payments.createdAt, endOfMonth)
-        ));
+      const allPayments = await db.select().from(payments);
+      const monthlyPayments = allPayments.filter(payment => 
+        payment.status === 'paid' && 
+        payment.createdAt >= startOfMonth && 
+        payment.createdAt <= endOfMonth
+      );
       const monthlyRevenue = monthlyPayments.reduce((sum, payment) => sum + payment.amount, 0);
 
       // Get pending payments count
-      const pendingPaymentsList = await db.select()
-        .from(payments)
-        .where(eq(payments.status, 'pending'));
-      const pendingPayments = pendingPaymentsList.length;
+      const pendingPayments = allPayments.filter(payment => payment.status === 'pending').length;
 
       // Get scheduled appointments count (future appointments)
       const now = new Date();
-      const scheduledAppointmentsList = await db.select()
-        .from(appointments)
-        .where(and(
-          gte(appointments.appointmentDate, now),
-          ne(appointments.status, 'cancelled')
-        ));
-      const scheduledAppointments = scheduledAppointmentsList.length;
+      const allAppointments = await db.select().from(appointments);
+      const scheduledAppointments = allAppointments.filter(appointment => 
+        appointment.appointmentDate >= now && appointment.status !== 'cancelled'
+      ).length;
 
       // Get active users count (users who logged in within last 30 days)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
-      const recentLogins = await db.select()
-        .from(userLoginLogs)
-        .where(and(
-          gte(userLoginLogs.loginTime, thirtyDaysAgo),
-          eq(userLoginLogs.loginStatus, 'success')
-        ));
+      const allLoginLogs = await db.select().from(userLoginLogs);
+      const recentLogins = allLoginLogs.filter(log => 
+        log.loginTime >= thirtyDaysAgo && log.loginStatus === 'success'
+      );
       const uniqueUserIds = new Set(recentLogins.map(log => log.userId));
       const activeUsers = uniqueUserIds.size;
 
