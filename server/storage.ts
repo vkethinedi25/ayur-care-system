@@ -19,6 +19,7 @@ export interface IStorage {
   deleteUser(id: number): Promise<void>;
   toggleUserStatus(id: number, isActive: boolean): Promise<User>;
   validateLogin(username: string, password: string): Promise<User | null>;
+  validateDoctorNameUniqueness(fullName: string, excludeId?: number): Promise<boolean>;
   
   // Patient methods
   getPatients(limit?: number, offset?: number, search?: string): Promise<Patient[]>;
@@ -130,6 +131,40 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async validateDoctorNameUniqueness(fullName: string, excludeId?: number): Promise<boolean> {
+    // Generate prefix for the given name
+    const nameParts = fullName.trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts[nameParts.length - 1] || '';
+    
+    let newPrefix = firstName.substring(0, 3).toUpperCase();
+    if (lastName && lastName !== firstName) {
+      newPrefix += lastName.substring(0, 1).toUpperCase();
+    }
+    
+    // Check all existing doctors for prefix conflicts
+    const existingDoctors = await db.select().from(users).where(eq(users.role, 'doctor'));
+    
+    for (const doctor of existingDoctors) {
+      if (excludeId && doctor.id === excludeId) continue;
+      
+      const existingNameParts = doctor.fullName.trim().split(' ');
+      const existingFirstName = existingNameParts[0] || '';
+      const existingLastName = existingNameParts[existingNameParts.length - 1] || '';
+      
+      let existingPrefix = existingFirstName.substring(0, 3).toUpperCase();
+      if (existingLastName && existingLastName !== existingFirstName) {
+        existingPrefix += existingLastName.substring(0, 1).toUpperCase();
+      }
+      
+      if (newPrefix === existingPrefix) {
+        return false; // Conflict found
+      }
+    }
+    
+    return true; // No conflicts
+  }
+
   async getPatients(limit = 50, offset = 0, search?: string): Promise<Patient[]> {
     let query = db.select().from(patients);
     
@@ -166,9 +201,47 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Doctor not found");
     }
     
-    // Extract first 3 letters of doctor's first name
-    const firstName = doctor.fullName.split(' ')[0];
-    const prefix = firstName.substring(0, 3).toUpperCase();
+    // Create a unique prefix using first 3 letters of first name + first letter of last name
+    const nameParts = doctor.fullName.trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts[nameParts.length - 1] || '';
+    
+    let prefix = firstName.substring(0, 3).toUpperCase();
+    if (lastName && lastName !== firstName) {
+      prefix += lastName.substring(0, 1).toUpperCase();
+    }
+    
+    // If prefix is still too short, pad with doctor ID to ensure uniqueness
+    if (prefix.length < 3) {
+      prefix = prefix.padEnd(3, doctorId.toString());
+    }
+    
+    // Check if this prefix combination already exists for other doctors
+    const existingDoctors = await db.select().from(users).where(eq(users.role, 'doctor'));
+    const usedPrefixes = new Set<string>();
+    
+    for (const existingDoc of existingDoctors) {
+      if (existingDoc.id !== doctorId) {
+        const existingNameParts = existingDoc.fullName.trim().split(' ');
+        const existingFirstName = existingNameParts[0] || '';
+        const existingLastName = existingNameParts[existingNameParts.length - 1] || '';
+        
+        let existingPrefix = existingFirstName.substring(0, 3).toUpperCase();
+        if (existingLastName && existingLastName !== existingFirstName) {
+          existingPrefix += existingLastName.substring(0, 1).toUpperCase();
+        }
+        if (existingPrefix.length < 3) {
+          existingPrefix = existingPrefix.padEnd(3, existingDoc.id.toString());
+        }
+        
+        usedPrefixes.add(existingPrefix);
+      }
+    }
+    
+    // If prefix conflicts, append doctor ID to make it unique
+    if (usedPrefixes.has(prefix)) {
+      prefix = prefix.substring(0, 2) + doctorId.toString().padStart(2, '0');
+    }
     
     // Get or create counter for this doctor
     let counter = await db.select().from(patientCounters).where(eq(patientCounters.doctorId, doctorId));

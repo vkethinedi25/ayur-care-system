@@ -115,6 +115,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/users", requireRole(["admin"]), async (req, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
+      
+      // Check for doctor name conflicts that could affect patient ID generation
+      if (userData.role === 'doctor') {
+        const isUnique = await storage.validateDoctorNameUniqueness(userData.fullName);
+        if (!isUnique) {
+          return res.status(400).json({ 
+            message: "Doctor name conflicts with existing doctor. Patient ID generation requires unique name combinations." 
+          });
+        }
+      }
+      
       const user = await storage.createUser(userData);
       
       const { password: _, ...userWithoutPassword } = user;
@@ -129,6 +140,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.params.id);
       const updateData = insertUserSchema.partial().parse(req.body);
+      
+      // Check for doctor name conflicts when updating role to doctor or changing name
+      if (updateData.role === 'doctor' || updateData.fullName) {
+        const currentUser = await storage.getUser(userId);
+        if (!currentUser) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        const finalName = updateData.fullName || currentUser.fullName;
+        const finalRole = updateData.role || currentUser.role;
+        
+        if (finalRole === 'doctor') {
+          const isUnique = await storage.validateDoctorNameUniqueness(finalName, userId);
+          if (!isUnique) {
+            return res.status(400).json({ 
+              message: "Doctor name conflicts with existing doctor. Patient ID generation requires unique name combinations." 
+            });
+          }
+        }
+      }
       
       const user = await storage.updateUser(userId, updateData);
       const { password: _, ...userWithoutPassword } = user;
