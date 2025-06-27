@@ -880,82 +880,95 @@ export class DatabaseStorage implements IStorage {
     scheduledAppointments: number;
     activeUsers: number;
   }> {
-    // Get total patients count
-    const totalPatientsResult = await db.select({ count: sql<number>`count(*)` }).from(patients);
-    const totalPatients = totalPatientsResult[0]?.count || 0;
+    try {
+      // Get total patients count
+      const totalPatientsResult = await db.select({ count: count() }).from(patients);
+      const totalPatients = Number(totalPatientsResult[0]?.count) || 0;
 
-    // Get total doctors count
-    const totalDoctorsResult = await db.select({ count: sql<number>`count(*)` })
-      .from(users)
-      .where(eq(users.role, 'doctor'));
-    const totalDoctors = totalDoctorsResult[0]?.count || 0;
+      // Get total doctors count
+      const totalDoctorsResult = await db.select({ count: count() })
+        .from(users)
+        .where(eq(users.role, 'doctor'));
+      const totalDoctors = Number(totalDoctorsResult[0]?.count) || 0;
 
-    // Get total staff count (non-admin, non-doctor users)
-    const totalStaffResult = await db.select({ count: sql<number>`count(*)` })
-      .from(users)
-      .where(sql`${users.role} NOT IN ('admin', 'doctor')`);
-    const totalStaff = totalStaffResult[0]?.count || 0;
+      // Get total staff count (non-admin, non-doctor users)
+      const totalStaffResult = await db.select({ count: count() })
+        .from(users)
+        .where(and(ne(users.role, 'admin'), ne(users.role, 'doctor')));
+      const totalStaff = Number(totalStaffResult[0]?.count) || 0;
 
-    // Get monthly revenue (current month)
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-    
-    const endOfMonth = new Date();
-    endOfMonth.setMonth(endOfMonth.getMonth() + 1);
-    endOfMonth.setDate(0);
-    endOfMonth.setHours(23, 59, 59, 999);
+      // Get monthly revenue (current month)
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      
+      const endOfMonth = new Date();
+      endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+      endOfMonth.setDate(0);
+      endOfMonth.setHours(23, 59, 59, 999);
 
-    const monthlyRevenueResult = await db.select({ 
-      total: sql<number>`coalesce(sum(${payments.amount}), 0)` 
-    })
-    .from(payments)
-    .where(and(
-      eq(payments.status, 'paid'),
-      gte(payments.createdAt, startOfMonth),
-      lte(payments.createdAt, endOfMonth)
-    ));
-    const monthlyRevenue = monthlyRevenueResult[0]?.total || 0;
-
-    // Get pending payments count
-    const pendingPaymentsResult = await db.select({ count: sql<number>`count(*)` })
+      const monthlyRevenueResult = await db.select({ 
+        total: sum(payments.amount)
+      })
       .from(payments)
-      .where(eq(payments.status, 'pending'));
-    const pendingPayments = pendingPaymentsResult[0]?.count || 0;
-
-    // Get scheduled appointments count (future appointments)
-    const now = new Date();
-    const scheduledAppointmentsResult = await db.select({ count: sql<number>`count(*)` })
-      .from(appointments)
       .where(and(
-        gte(appointments.appointmentDate, now),
-        ne(appointments.status, 'cancelled')
+        eq(payments.status, 'paid'),
+        gte(payments.createdAt, startOfMonth),
+        lte(payments.createdAt, endOfMonth)
       ));
-    const scheduledAppointments = scheduledAppointmentsResult[0]?.count || 0;
+      const monthlyRevenue = Number(monthlyRevenueResult[0]?.total) || 0;
 
-    // Get active users count (users who logged in within last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    const activeUsersResult = await db.select({ 
-      count: sql<number>`count(distinct ${userLoginLogs.userId})` 
-    })
-    .from(userLoginLogs)
-    .where(and(
-      gte(userLoginLogs.loginTime, thirtyDaysAgo),
-      eq(userLoginLogs.loginStatus, 'success')
-    ));
-    const activeUsers = activeUsersResult[0]?.count || 0;
+      // Get pending payments count
+      const pendingPaymentsResult = await db.select({ count: count() })
+        .from(payments)
+        .where(eq(payments.status, 'pending'));
+      const pendingPayments = Number(pendingPaymentsResult[0]?.count) || 0;
 
-    return {
-      totalPatients,
-      totalDoctors,
-      totalStaff,
-      monthlyRevenue,
-      pendingPayments,
-      scheduledAppointments,
-      activeUsers
-    };
+      // Get scheduled appointments count (future appointments)
+      const now = new Date();
+      const scheduledAppointmentsResult = await db.select({ count: count() })
+        .from(appointments)
+        .where(and(
+          gte(appointments.appointmentDate, now),
+          ne(appointments.status, 'cancelled')
+        ));
+      const scheduledAppointments = Number(scheduledAppointmentsResult[0]?.count) || 0;
+
+      // Get active users count (users who logged in within last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const activeUsersResult = await db.select({ 
+        count: countDistinct(userLoginLogs.userId)
+      })
+      .from(userLoginLogs)
+      .where(and(
+        gte(userLoginLogs.loginTime, thirtyDaysAgo),
+        eq(userLoginLogs.loginStatus, 'success')
+      ));
+      const activeUsers = Number(activeUsersResult[0]?.count) || 0;
+
+      return {
+        totalPatients,
+        totalDoctors,
+        totalStaff,
+        monthlyRevenue,
+        pendingPayments,
+        scheduledAppointments,
+        activeUsers
+      };
+    } catch (error) {
+      console.error("Error fetching admin dashboard metrics:", error);
+      return {
+        totalPatients: 0,
+        totalDoctors: 0,
+        totalStaff: 0,
+        monthlyRevenue: 0,
+        pendingPayments: 0,
+        scheduledAppointments: 0,
+        activeUsers: 0
+      };
+    }
   }
 }
 
