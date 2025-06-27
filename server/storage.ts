@@ -6,7 +6,7 @@ import {
   type PatientCounter, type UserLoginLog, type InsertUserLoginLog
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, gte, lte, ilike, or, count, sum } from "drizzle-orm";
+import { eq, desc, and, gte, lte, ilike, or, count, sum, sql, countDistinct } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 export interface IStorage {
@@ -60,6 +60,16 @@ export interface IStorage {
   createUserLoginLog(loginLog: InsertUserLoginLog): Promise<UserLoginLog>;
   getUserLoginLogs(limit?: number, offset?: number): Promise<(UserLoginLog & { user: User })[]>;
   getLoginLogsByUserId(userId: number, limit?: number): Promise<UserLoginLog[]>;
+  
+  // Admin dashboard methods
+  getDoctorStats(doctorId: number): Promise<{
+    totalPatients: number;
+    activePatients: number;
+    totalAppointments: number;
+    monthlyAppointments: number;
+    lastActive: string;
+  }>;
+  getDoctorPatients(doctorId: number): Promise<Patient[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -725,6 +735,115 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
     
     return loginLogs;
+  }
+
+  async getDoctorStats(doctorId: number): Promise<{
+    totalPatients: number;
+    activePatients: number;
+    totalAppointments: number;
+    monthlyAppointments: number;
+    lastActive: string;
+  }> {
+    // Get total patients count
+    const totalPatientsResult = await db
+      .select({ count: sql<number>`cast(count(*) as int)` })
+      .from(patients)
+      .where(eq(patients.doctorId, doctorId));
+    
+    const totalPatients = totalPatientsResult[0]?.count || 0;
+
+    // Get active patients (patients with appointments in last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    
+    const activePatientsResult = await db
+      .selectDistinct({ patientId: appointments.patientId })
+      .from(appointments)
+      .innerJoin(patients, eq(appointments.patientId, patients.id))
+      .where(
+        and(
+          eq(patients.doctorId, doctorId),
+          gte(appointments.appointmentDate, sixMonthsAgo)
+        )
+      );
+    
+    const activePatients = activePatientsResult.length;
+
+    // Get total appointments count
+    const totalAppointmentsResult = await db
+      .select({ count: sql<number>`cast(count(*) as int)` })
+      .from(appointments)
+      .where(eq(appointments.doctorId, doctorId));
+    
+    const totalAppointments = totalAppointmentsResult[0]?.count || 0;
+
+    // Get this month's appointments count
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    
+    const monthlyAppointmentsResult = await db
+      .select({ count: sql<number>`cast(count(*) as int)` })
+      .from(appointments)
+      .where(
+        and(
+          eq(appointments.doctorId, doctorId),
+          gte(appointments.appointmentDate, startOfMonth)
+        )
+      );
+    
+    const monthlyAppointments = monthlyAppointmentsResult[0]?.count || 0;
+
+    // Get last active date (most recent appointment)
+    const lastAppointmentResult = await db
+      .select({ appointmentDate: appointments.appointmentDate })
+      .from(appointments)
+      .where(eq(appointments.doctorId, doctorId))
+      .orderBy(desc(appointments.appointmentDate))
+      .limit(1);
+
+    const lastActive = lastAppointmentResult[0]?.appointmentDate 
+      ? new Date(lastAppointmentResult[0].appointmentDate).toISOString()
+      : new Date().toISOString();
+
+    return {
+      totalPatients,
+      activePatients,
+      totalAppointments,
+      monthlyAppointments,
+      lastActive
+    };
+  }
+
+  async getDoctorPatients(doctorId: number): Promise<Patient[]> {
+    const doctorPatients = await db
+      .select({
+        id: patients.id,
+        patientId: patients.patientId,
+        doctorId: patients.doctorId,
+        fullName: patients.fullName,
+        age: patients.age,
+        gender: patients.gender,
+        phoneNumber: patients.phoneNumber,
+        email: patients.email,
+        address: patients.address,
+        prakriti: patients.prakriti,
+        vikriti: patients.vikriti,
+        medicalHistory: patients.medicalHistory,
+        allergies: patients.allergies,
+        currentMedications: patients.currentMedications,
+        createdAt: patients.createdAt,
+        updatedAt: patients.updatedAt,
+        totalAppointments: sql<number>`cast(count(${appointments.id}) as int)`,
+        lastVisitDate: sql<Date | null>`max(${appointments.appointmentDate})`
+      })
+      .from(patients)
+      .leftJoin(appointments, eq(patients.id, appointments.patientId))
+      .where(eq(patients.doctorId, doctorId))
+      .groupBy(patients.id)
+      .orderBy(desc(patients.createdAt));
+
+    return doctorPatients;
   }
 }
 

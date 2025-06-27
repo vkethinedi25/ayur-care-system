@@ -11,7 +11,8 @@ import {
   LogOut,
   Flower,
   Shield,
-  FileText
+  FileText,
+  Database
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,6 +30,7 @@ const navigationItems = [
 const adminNavigationItems = [
   { path: "/users", label: "User Management", icon: Shield, adminOnly: true },
   { path: "/admin/logs", label: "Login Logs", icon: FileText, adminOnly: true },
+  { path: "/admin/dashboard", label: "Admin Dashboard", icon: Database, adminOnly: true },
 ];
 
 export default function Sidebar() {

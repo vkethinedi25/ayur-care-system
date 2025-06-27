@@ -578,6 +578,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin dashboard routes (admin only)
+  app.get("/api/admin/doctor-stats/:doctorId", requireRole(["admin"]), async (req, res) => {
+    try {
+      const doctorId = parseInt(req.params.doctorId);
+      const stats = await storage.getDoctorStats(doctorId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching doctor stats:", error);
+      res.status(500).json({ message: "Failed to fetch doctor stats" });
+    }
+  });
+
+  app.get("/api/admin/doctor-patients/:doctorId", requireRole(["admin"]), async (req, res) => {
+    try {
+      const doctorId = parseInt(req.params.doctorId);
+      const patients = await storage.getDoctorPatients(doctorId);
+      res.json(patients);
+    } catch (error) {
+      console.error("Error fetching doctor patients:", error);
+      res.status(500).json({ message: "Failed to fetch doctor patients" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
