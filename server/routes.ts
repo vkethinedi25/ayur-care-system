@@ -323,10 +323,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/appointments", async (req, res) => {
+  app.post("/api/appointments", requireAuth, async (req, res) => {
     try {
-      const appointmentData = insertAppointmentSchema.parse(req.body);
-      const appointment = await storage.createAppointment(appointmentData);
+      const appointmentData = {
+        ...req.body,
+        appointmentDate: new Date(req.body.appointmentDate), // Convert string to Date
+        doctorId: req.session.userId! // Use logged-in doctor's ID
+      };
+      
+      // Create a custom validation schema that accepts the converted Date object
+      const appointmentSchema = insertAppointmentSchema.extend({
+        appointmentDate: z.date(),
+      });
+      
+      const validatedData = appointmentSchema.parse(appointmentData);
+      const appointment = await storage.createAppointment(validatedData);
       res.status(201).json(appointment);
     } catch (error) {
       if (error instanceof z.ZodError) {

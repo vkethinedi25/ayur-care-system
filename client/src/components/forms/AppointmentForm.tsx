@@ -31,10 +31,9 @@ export default function AppointmentForm({ open, onOpenChange }: AppointmentFormP
   const form = useForm<InsertAppointment & { appointmentTime: string }>({
     resolver: zodResolver(insertAppointmentSchema.extend({
       appointmentTime: insertAppointmentSchema.shape.appointmentDate,
-    }).omit({ appointmentDate: true })),
+    }).omit({ appointmentDate: true, doctorId: true })),
     defaultValues: {
       patientId: 0,
-      doctorId: 1, // Current user's ID
       appointmentTime: "",
       duration: 30,
       type: "",
@@ -69,6 +68,7 @@ export default function AppointmentForm({ open, onOpenChange }: AppointmentFormP
   });
 
   const onSubmit = (data: InsertAppointment & { appointmentTime: string; appointmentDate?: string }) => {
+    // Convert datetime-local string to Date object for the API
     const appointmentDate = new Date(data.appointmentTime);
     const { appointmentTime, ...appointmentData } = data;
     createAppointmentMutation.mutate({
