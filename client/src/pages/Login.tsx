@@ -6,9 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useAuth } from "@/hooks/useAuth";
 import { Flower, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -17,15 +17,12 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-interface LoginProps {
-  onLoginSuccess: () => void;
-}
-
-export default function Login({ onLoginSuccess }: LoginProps) {
+export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -52,7 +49,8 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           title: "Welcome back!",
           description: "You have been successfully logged in.",
         });
-        onLoginSuccess();
+        // Refresh the authentication state by invalidating queries
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       } else {
         const error = await response.text();
         toast({

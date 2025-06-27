@@ -19,11 +19,7 @@ export function useAuth() {
     queryKey: ["/api/auth/user"],
     retry: false,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchInterval: false,
-    refetchIntervalInBackground: false,
-    staleTime: Infinity, // Don't auto-refetch
-    enabled: false, // Disable automatic fetching
+    staleTime: 60000, // Cache for 1 minute
   });
 
   return {
