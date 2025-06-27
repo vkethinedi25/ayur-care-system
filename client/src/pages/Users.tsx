@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Users as UsersIcon, Plus, Edit, Trash2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import UserForm from "@/components/forms/UserForm";
 
 import { apiRequest } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
@@ -231,81 +232,15 @@ export default function Users() {
         </CardContent>
       </Card>
 
-      {/* User Form Dialog - Simple inline implementation */}
-      {showUserForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">
-              {editingUser ? 'Edit User' : 'Add New User'}
-            </h3>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.target as HTMLFormElement);
-              const userData = {
-                username: formData.get('username') as string,
-                password: formData.get('password') as string,
-                email: formData.get('email') as string,
-                fullName: formData.get('fullName') as string,
-                role: formData.get('role') as string,
-                isActive: formData.get('isActive') === 'on'
-              };
-              // Handle form submission here
-              console.log('User data:', userData);
-              setShowUserForm(false);
-              setEditingUser(null);
-            }} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Username</label>
-                <Input name="username" defaultValue={editingUser?.username} required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Password</label>
-                <Input name="password" type="password" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
-                <Input name="email" type="email" defaultValue={editingUser?.email} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Full Name</label>
-                <Input name="fullName" defaultValue={editingUser?.fullName} required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Role</label>
-                <select name="role" defaultValue={editingUser?.role || 'staff'} className="w-full border border-gray-300 rounded px-3 py-2">
-                  <option value="admin">Admin</option>
-                  <option value="doctor">Doctor</option>
-                  <option value="staff">Staff</option>
-                </select>
-              </div>
-              <div className="flex items-center">
-                <input 
-                  type="checkbox" 
-                  name="isActive" 
-                  defaultChecked={editingUser?.isActive ?? true}
-                  className="mr-2"
-                />
-                <label className="text-sm font-medium">Active</label>
-              </div>
-              <div className="flex justify-end space-x-2 mt-6">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => {
-                    setShowUserForm(false);
-                    setEditingUser(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {editingUser ? 'Update' : 'Create'} User
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <UserForm
+        open={showUserForm}
+        onOpenChange={setShowUserForm}
+        editingUser={editingUser}
+        onSuccess={() => {
+          setShowUserForm(false);
+          setEditingUser(null);
+        }}
+      />
     </div>
   );
 }
