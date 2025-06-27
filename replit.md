@@ -115,6 +115,12 @@ The system uses a comprehensive PostgreSQL schema with the following main entiti
 - **File Storage**: Local uploads directory with configurable limits
 
 ## Changelog
+- June 27, 2025. Security enhancements and patient ID system implementation:
+  - Removed demo credentials from login page for production deployment
+  - Implemented doctor-based patient ID generation (e.g., MUR1, MUR2)
+  - Enhanced search functionality to include patient ID searches
+  - Fixed logout functionality with proper session management
+  - Set 30-minute session timeout for enhanced security
 - June 26, 2025. Initial setup
 
 ## User Preferences

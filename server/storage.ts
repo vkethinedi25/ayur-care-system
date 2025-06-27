@@ -1,8 +1,9 @@
 import { 
-  users, patients, appointments, prescriptions, payments, bedManagement, inpatientRecords,
+  users, patients, appointments, prescriptions, payments, bedManagement, inpatientRecords, patientCounters,
   type User, type InsertUser, type Patient, type InsertPatient, 
   type Appointment, type InsertAppointment, type Prescription, type InsertPrescription,
-  type Payment, type InsertPayment, type BedManagement, type InpatientRecord, type InsertInpatientRecord
+  type Payment, type InsertPayment, type BedManagement, type InpatientRecord, type InsertInpatientRecord,
+  type PatientCounter
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, lte, ilike, or, count, sum } from "drizzle-orm";
@@ -23,8 +24,9 @@ export interface IStorage {
   getPatients(limit?: number, offset?: number, search?: string): Promise<Patient[]>;
   getPatient(id: number): Promise<Patient | undefined>;
   getPatientByPatientId(patientId: string): Promise<Patient | undefined>;
-  createPatient(patient: InsertPatient): Promise<Patient>;
+  createPatient(patient: InsertPatient, doctorId: number): Promise<Patient>;
   updatePatient(id: number, patient: Partial<InsertPatient>): Promise<Patient>;
+  generatePatientId(doctorId: number): Promise<string>;
   
   // Appointment methods
   getAppointments(doctorId?: number, date?: Date): Promise<(Appointment & { patient: Patient; doctor: User })[]>;
@@ -157,14 +159,50 @@ export class DatabaseStorage implements IStorage {
     return patient || undefined;
   }
 
-  async createPatient(insertPatient: InsertPatient): Promise<Patient> {
-    // Generate patient ID
-    const patientCount = await db.select({ count: count() }).from(patients);
-    const patientId = `PAT-${new Date().getFullYear()}-${String(patientCount[0].count + 1).padStart(3, '0')}`;
+  async generatePatientId(doctorId: number): Promise<string> {
+    // Get doctor's full name to create the prefix
+    const doctor = await this.getUser(doctorId);
+    if (!doctor) {
+      throw new Error("Doctor not found");
+    }
+    
+    // Extract first 3 letters of doctor's first name
+    const firstName = doctor.fullName.split(' ')[0];
+    const prefix = firstName.substring(0, 3).toUpperCase();
+    
+    // Get or create counter for this doctor
+    let counter = await db.select().from(patientCounters).where(eq(patientCounters.doctorId, doctorId));
+    
+    if (counter.length === 0) {
+      // Create new counter for this doctor
+      await db.insert(patientCounters).values({
+        doctorId,
+        lastCount: 1,
+      });
+      return `${prefix}1`;
+    } else {
+      // Increment existing counter
+      const newCount = counter[0].lastCount + 1;
+      await db.update(patientCounters)
+        .set({ 
+          lastCount: newCount,
+          updatedAt: new Date()
+        })
+        .where(eq(patientCounters.doctorId, doctorId));
+      return `${prefix}${newCount}`;
+    }
+  }
+
+  async createPatient(insertPatient: InsertPatient, doctorId: number): Promise<Patient> {
+    // Generate patient ID based on doctor
+    const generatedPatientId = await this.generatePatientId(doctorId);
     
     const [patient] = await db
       .insert(patients)
-      .values({ ...insertPatient, patientId })
+      .values({
+        ...insertPatient,
+        patientId: generatedPatientId,
+      })
       .returning();
     return patient;
   }

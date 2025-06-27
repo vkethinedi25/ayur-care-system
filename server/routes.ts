@@ -227,10 +227,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/patients", async (req, res) => {
+  app.post("/api/patients", requireAuth, async (req, res) => {
     try {
       const patientData = insertPatientSchema.parse(req.body);
-      const patient = await storage.createPatient(patientData);
+      const doctorId = req.session.userId!;
+      const patient = await storage.createPatient(patientData, doctorId);
       res.status(201).json(patient);
     } catch (error) {
       if (error instanceof z.ZodError) {

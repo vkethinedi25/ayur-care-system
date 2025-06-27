@@ -122,6 +122,13 @@ export const inpatientRecords = pgTable("inpatient_records", {
   }>>(),
 });
 
+export const patientCounters = pgTable("patient_counters", {
+  id: serial("id").primaryKey(),
+  doctorId: integer("doctor_id").notNull().unique(),
+  lastCount: integer("last_count").notNull().default(0),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   appointments: many(appointments),
@@ -193,6 +200,13 @@ export const inpatientRecordsRelations = relations(inpatientRecords, ({ one }) =
   }),
 }));
 
+export const patientCountersRelations = relations(patientCounters, ({ one }) => ({
+  doctor: one(users, {
+    fields: [patientCounters.doctorId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -240,3 +254,4 @@ export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type BedManagement = typeof bedManagement.$inferSelect;
 export type InpatientRecord = typeof inpatientRecords.$inferSelect;
 export type InsertInpatientRecord = z.infer<typeof insertInpatientRecordSchema>;
+export type PatientCounter = typeof patientCounters.$inferSelect;

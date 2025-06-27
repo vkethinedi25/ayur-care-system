@@ -155,11 +155,7 @@ export default function Login() {
               </form>
             </Form>
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-ayur-gray-600">
-                Demo credentials: admin / password
-              </p>
-            </div>
+
           </CardContent>
         </Card>
 
